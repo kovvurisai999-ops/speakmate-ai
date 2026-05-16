@@ -1,1 +1,1 @@
-web: python -m daphne -b 0.0.0.0 -p $PORT core_project.asgi:application
+web: gunicorn core_project.wsgi:application --bind 0.0.0.0:$PORT
