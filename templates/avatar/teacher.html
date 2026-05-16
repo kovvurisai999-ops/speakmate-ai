@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .avatar-container {
+        padding: 100px 2rem 4rem;
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        height: calc(100vh - 80px);
+    }
+
+    #avatar-canvas {
+        background: radial-gradient(circle, #1e293b 0%, #0f172a 100%);
+        border-radius: 32px;
+        border: 1px solid var(--glass-border);
+        width: 100%;
+        height: 100%;
+    }
+
+    .chat-box {
+        background: var(--bg-card);
+        border-radius: 32px;
+        border: 1px solid var(--glass-border);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .chat-header {
+        padding: 1.5rem;
+        background: rgba(99, 102, 241, 0.1);
+        border-bottom: 1px solid var(--glass-border);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="avatar-container">
+    <div id="avatar-viewport">
+        <div id="avatar-canvas"></div>
+    </div>
+
+    <div class="chat-box">
+        <div class="chat-header">
+            <h3>Talk to Prof. SpeakMate</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">Your personalized 3D AI Tutor</p>
+        </div>
+        <div style="flex: 1; padding: 2rem; overflow-y: auto;" id="avatar-chat-messages">
+            <p style="color: var(--text-muted);">Welcome! I am your 3D English Teacher. How can I help you today?</p>
+        </div>
+        <div style="padding: 1.5rem; border-top: 1px solid var(--glass-border);">
+            <div style="display: flex; gap: 1rem;">
+                <input type="text" id="avatar-input" placeholder="Type your message..." style="flex: 1; background: var(--bg-dark); border: 1px solid var(--glass-border); padding: 1rem; border-radius: 100px; color: white; outline: none;">
+                <button class="btn btn-primary" id="avatar-send"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Load Three.js from CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+    // Basic Three.js setup for the AI Teacher
+    const container = document.getElementById('avatar-canvas');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    container.appendChild(renderer.domElement);
+
+    // Create a simple representation of a teacher (Sphere head + Cube body)
+    // In a real scenario, we'd load a GLTF model from ReadyPlayerMe
+    const group = new THREE.Group();
+
+    const headGeo = new THREE.SphereGeometry(0.5, 32, 32);
+    const headMat = new THREE.MeshStandardMaterial({ color: 0x6366f1 });
+    const head = new THREE.Mesh(headGeo, headMat);
+    head.position.y = 0.6;
+    group.add(head);
+
+    const bodyGeo = new THREE.BoxGeometry(0.8, 1, 0.4);
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1e293b });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    group.add(body);
+
+    scene.add(group);
+
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(1, 1, 2);
+    scene.add(light);
+    scene.add(new THREE.AmbientLight(0x404040));
+
+    camera.position.z = 3;
+
+    function animate() {
+        requestAnimationFrame(animate);
+        group.rotation.y += 0.005;
+        // Subtle floating motion
+        group.position.y = Math.sin(Date.now() * 0.002) * 0.05;
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    // Chat logic
+    const input = document.getElementById('avatar-input');
+    const sendBtn = document.getElementById('avatar-send');
+    const chatMsgs = document.getElementById('avatar-chat-messages');
+
+    sendBtn.onclick = async () => {
+        const text = input.value.trim();
+        if(!text) return;
+
+        const p = document.createElement('p');
+        p.style.color = "white";
+        p.style.marginBottom = "1rem";
+        p.innerHTML = `<strong>You:</strong> ${text}`;
+        chatMsgs.appendChild(p);
+        input.value = '';
+
+        // Thinking indicator
+        const thinking = document.createElement('p');
+        thinking.style.color = "var(--text-muted)";
+        thinking.style.fontStyle = "italic";
+        thinking.innerHTML = "Prof. SpeakMate is thinking...";
+        chatMsgs.appendChild(thinking);
+        chatMsgs.scrollTop = chatMsgs.scrollHeight;
+
+        try {
+            const response = await fetch('{% url "chat:send" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ 
+                    message: text,
+                    fast_mode: true // Signal for even faster response
+                })
+            });
+            const data = await response.json();
+            
+            thinking.remove();
+
+            const resp = document.createElement('div');
+            resp.style.marginBottom = "1rem";
+            let html = '';
+            
+            if (data.translated) {
+                html += `<div style="color: var(--primary); font-size: 0.8rem; margin-bottom: 0.2rem;">English: ${data.translated}</div>`;
+            }
+            
+            html += `<strong>Prof. SpeakMate:</strong> ${data.response}`;
+            
+            if (data.feedback) {
+                html += `<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.3rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 0.3rem;"><i class="fas fa-wand-magic-sparkles"></i> ${data.feedback}</div>`;
+            }
+            
+            resp.innerHTML = html;
+            resp.style.color = "white";
+            chatMsgs.appendChild(resp);
+            chatMsgs.scrollTop = chatMsgs.scrollHeight;
+            
+            // Audio Feedback
+            if (data.audio_url) {
+                const audio = new Audio(data.audio_url);
+                audio.play();
+            }
+
+            // Visual feedback
+            head.scale.set(1.1, 1.1, 1.1);
+            setTimeout(() => head.scale.set(1, 1, 1), 200);
+        } catch (error) {
+            console.error('Error:', error);
+            thinking.innerHTML = "Error connecting to AI teacher.";
+        }
+    };
+</script>
+{% endblock %}

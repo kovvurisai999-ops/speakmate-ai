@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .dashboard-container {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        min-height: calc(100vh - 80px);
+        margin-top: 80px;
+    }
+
+    .sidebar {
+        background: var(--bg-card);
+        border-right: 1px solid var(--glass-border);
+        padding: 2rem;
+    }
+
+    .sidebar-menu {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .menu-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        color: var(--text-muted);
+        font-weight: 500;
+        transition: var(--transition);
+    }
+
+    .menu-item:hover, .menu-item.active {
+        background: rgba(99, 102, 241, 0.1);
+        color: var(--primary);
+    }
+
+    .main-content {
+        padding: 3rem;
+        background: #0a0f1d;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+    }
+
+    .stat-card {
+        background: var(--bg-card);
+        padding: 2rem;
+        border-radius: 20px;
+        border: 1px solid var(--glass-border);
+    }
+
+    .stat-card h4 {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-card .value {
+        font-size: 2rem;
+        font-weight: 700;
+    }
+
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 2rem;
+    }
+
+    .action-card {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        padding: 3rem;
+        border-radius: 24px;
+        color: white;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .action-card h2 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .action-card p {
+        opacity: 0.9;
+        margin-bottom: 2rem;
+        max-width: 400px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .action-card .btn {
+        background: white;
+        color: var(--primary);
+        position: relative;
+        z-index: 1;
+    }
+
+    .action-card::after {
+        content: '\f3cd';
+        font-family: 'Font Awesome 6 Free';
+        font-weight: 900;
+        position: absolute;
+        right: -20px;
+        bottom: -20px;
+        font-size: 10rem;
+        opacity: 0.1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <aside class="sidebar">
+        <div class="sidebar-menu">
+            <a href="{% url 'dashboard:index' %}" class="menu-item active">
+                <i class="fas fa-th-large"></i> Overview
+            </a>
+            <a href="{% url 'avatar:teacher' %}" class="menu-item">
+                <i class="fas fa-graduation-cap"></i> AI Teacher
+            </a>
+            <a href="{% url 'chat:index' %}" class="menu-item">
+                <i class="fas fa-comments"></i> AI Chatbot
+            </a>
+            <a href="{% url 'pronunciation:index' %}" class="menu-item">
+                <i class="fas fa-bullhorn"></i> Pronunciation
+            </a>
+            <a href="{% url 'interview:list' %}" class="menu-item">
+                <i class="fas fa-user-tie"></i> Interview AI
+            </a>
+            <a href="{% url 'webcam:mirror' %}" class="menu-item">
+                <i class="fas fa-video"></i> Mirror Mode
+            </a>
+            <a href="{% url 'roadmap:index' %}" class="menu-item">
+                <i class="fas fa-map-signs"></i> Learning Roadmap
+            </a>
+            <a href="{% url 'dashboard:analytics' %}" class="menu-item">
+                <i class="fas fa-chart-line"></i> Analytics
+            </a>
+            <a href="{% url 'dashboard:settings' %}" class="menu-item">
+                <i class="fas fa-cog"></i> Settings
+            </a>
+            {% if user.is_staff %}
+            <a href="{% url 'dashboard:admin_panel' %}" class="menu-item" style="color: #fbbf24;">
+                <i class="fas fa-user-shield"></i> Admin Panel 🔥
+            </a>
+            {% endif %}
+            
+            <hr style="border: none; border-top: 1px solid var(--glass-border); margin: 1rem 0;">
+            
+            <form action="{% url 'accounts:logout' %}" method="POST" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="menu-item" style="background: none; border: none; width: 100%; cursor: pointer;">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <div class="welcome-header" style="margin-bottom: 3rem;">
+            <h1>Hello, {{ user.username }}! 👋</h1>
+            <p style="color: var(--text-muted);">Ready to level up your English today?</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h4>Total XP</h4>
+                <div class="value">{{ user.xp }}</div>
+            </div>
+            <div class="stat-card">
+                <h4>Daily Streak</h4>
+                <div class="value">{{ user.streak }} Days</div>
+            </div>
+            <div class="stat-card">
+                <h4>Lessons Completed</h4>
+                <div class="value">{{ lessons_completed }}</div>
+            </div>
+            <div class="stat-card">
+                <h4>Average Score</h4>
+                <div class="value">{{ average_score }}%</div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="left-col">
+                {% if last_completed %}
+                <div class="action-card" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); color: var(--text-main); margin-bottom: 2rem;">
+                    <h3 style="color: #10b981; margin-bottom: 0.5rem;"><i class="fas fa-check-circle"></i> Last Completed Task</h3>
+                    <p style="margin-bottom: 0.5rem; color: var(--text-main);"><strong>{{ last_completed.concept.name }}</strong></p>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0;">Completed on {{ last_completed.last_practiced|date:"M d, Y" }} with a score of {{ last_completed.score }}%</p>
+                </div>
+                {% endif %}
+
+                <div class="action-card">
+                    <h2>Practice Conversation</h2>
+                    <p>Start a friendly chat with SpeakMate AI and get real-time feedback on your grammar and pronunciation.</p>
+                    <a href="{% url 'chat:index' %}" class="btn">Start Practicing</a>
+                </div>
+
+                <div class="action-card" style="background: linear-gradient(135deg, #f59e0b, #ef4444);">
+                    <h2>Your Learning Path</h2>
+                    <p>Track your progress across all 9 levels of the SpeakMate English Roadmap.</p>
+                    <a href="{% url 'roadmap:index' %}" class="btn">View Roadmap</a>
+                </div>
+            </div>
+
+            <div class="right-col">
+                <div class="challenges-card" style="background: var(--bg-card); padding: 2rem; border-radius: 24px; border: 1px solid var(--glass-border);">
+                    <h3 style="margin-bottom: 1.5rem;">Daily Challenges</h3>
+                    {% for uc in user_challenges %}
+                    <div class="challenge-item" style="margin-bottom: 1rem; padding: 1rem; background: var(--bg-dark); border-radius: 12px; border: 1px solid var(--glass-border); position: relative;">
+                        <h4 style="font-size: 0.95rem; margin-bottom: 0.3rem;">{{ uc.challenge.title }}</h4>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">{{ uc.challenge.description }}</p>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 0.75rem; color: #f59e0b;"><i class="fas fa-bolt"></i> {{ uc.challenge.xp_reward }} XP</span>
+                            {% if uc.is_completed %}
+                                <span style="font-size: 0.75rem; color: #10b981;"><i class="fas fa-check"></i> Completed</span>
+                            {% else %}
+                                <span style="font-size: 0.75rem; color: var(--text-muted);"><i class="far fa-circle"></i> Pending</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p style="color: var(--text-muted); font-size: 0.85rem;">No challenges assigned for today.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

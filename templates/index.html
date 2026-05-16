@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<section class="hero">
+    <div class="container">
+        <div class="hero-content">
+            <h1>Master English with <br>AI-Powered Coaching</h1>
+            <p>Your personal AI English trainer is here. Practice conversations, fix your pronunciation, and build confidence with real-time feedback.</p>
+            <div class="hero-btns">
+                <a href="{% url 'accounts:signup' %}" class="btn btn-primary">Start Training Free</a>
+                <a href="{% url 'roadmap:index' %}" class="btn btn-outline" style="border-color: var(--accent); color: var(--accent);">
+                    <i class="fas fa-map-signs"></i> Learning Roadmap
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="features" class="section-padding">
+    <div class="container">
+        <div class="section-title">
+            <h2>Everything you need to speak fluently</h2>
+            <p>Our AI-driven modules focus on every aspect of your communication skills.</p>
+        </div>
+        
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-comments"></i></div>
+                <h3>AI Friend Chatbot</h3>
+                <p>Have natural, friendly conversations with our AI companion. It understands your context and guides you like a real friend.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-bullhorn"></i></div>
+                <h3>Pronunciation Analysis</h3>
+                <p>Get instant feedback on your accent and pronunciation using advanced Wav2Vec2 and Librosa analysis.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-check-circle"></i></div>
+                <h3>Grammar Correction</h3>
+                <p>Speak naturally while our AI identifies and corrects your grammar mistakes in real-time, explaining the "why".</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-user-tie"></i></div>
+                <h3>Interview Practice</h3>
+                <p>Prepare for your dream job with AI-simulated HR and technical interviews tailored to your industry.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-video"></i></div>
+                <h3>Mirror Practice</h3>
+                <p>See yourself as you speak. Build confidence and improve your body language with our unique mirror mode.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+                <h3>Speaking Score</h3>
+                <p>Track your progress with detailed analytics on fluency, grammar, confidence, and pronunciation.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="how-it-works" class="section-padding" style="background: rgba(99, 102, 241, 0.03);">
+    <div class="container">
+        <div class="section-title">
+            <h2>How it Works</h2>
+            <p>Starting your journey to fluency is easy and intuitive.</p>
+        </div>
+        <!-- Steps could be added here -->
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .admin-container {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        min-height: calc(100vh - 80px);
+        margin-top: 80px;
+    }
+
+    .sidebar { background: #0f172a; border-right: 1px solid rgba(255,255,255,0.05); padding: 2rem; }
+    .main-content { padding: 3rem; background: #020617; }
+
+    .menu-item {
+        display: flex;
+        align-items: center; gap: 1rem; padding: 1rem 1.5rem; border-radius: 12px;
+        color: #94a3b8; text-decoration: none; transition: 0.3s;
+    }
+
+    .menu-item:hover, .menu-item.active { background: rgba(99, 102, 241, 0.1); color: white; }
+
+    .safety-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+    }
+
+    .safety-card {
+        background: #1e293b;
+        padding: 2rem;
+        border-radius: 20px;
+        border: 1px solid rgba(255,255,255,0.05);
+        position: relative;
+    }
+
+    .pulse-dot {
+        width: 8px; height: 8px;
+        background: #10b981;
+        border-radius: 50%;
+        position: absolute;
+        top: 1.5rem; right: 1.5rem;
+        box-shadow: 0 0 10px #10b981;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { opacity: 0.4; }
+        50% { opacity: 1; }
+        100% { opacity: 0.4; }
+    }
+
+    .monitor-panel {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 2rem;
+    }
+
+    .card { background: #1e293b; border-radius: 24px; padding: 2rem; border: 1px solid rgba(255,255,255,0.05); }
+
+    .room-item {
+        background: #0f172a;
+        padding: 1.2rem;
+        border-radius: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        border-left: 4px solid #10b981;
+    }
+
+    .room-warning { border-left-color: #fbbf24; }
+    .room-danger { border-left-color: #ef4444; }
+
+    .alert-item {
+        background: rgba(239, 68, 68, 0.1);
+        padding: 1rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .badge-risk {
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 800;
+    }
+
+    .risk-low { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+    .risk-high { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <aside class="sidebar">
+        <h2 style="color: white; margin-bottom: 2rem; font-size: 1.2rem;">ADMIN PANEL 🔥</h2>
+        <nav class="sidebar-menu">
+            <a href="{% url 'dashboard:admin_panel' %}" class="menu-item">
+                <i class="fas fa-chart-pie"></i> Overview
+            </a>
+            <a href="{% url 'dashboard:admin_users' %}" class="menu-item">
+                <i class="fas fa-users"></i> User Management
+            </a>
+            <a href="{% url 'dashboard:admin_content' %}" class="menu-item">
+                <i class="fas fa-book"></i> Content Manager
+            </a>
+            <a href="{% url 'dashboard:admin_safety' %}" class="menu-item active">
+                <i class="fas fa-shield-alt"></i> AI Safety
+            </a>
+            <a href="{% url 'dashboard:admin_revenue' %}" class="menu-item">
+                <i class="fas fa-file-invoice-dollar"></i> Revenue
+            </a>
+            <a href="{% url 'dashboard:admin_logs' %}" class="menu-item">
+                <i class="fas fa-bug"></i> Error Logs
+            </a>
+            <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.05); margin: 1.5rem 0;">
+            <a href="{% url 'dashboard:index' %}" class="menu-item">
+                <i class="fas fa-arrow-left"></i> Back to User View
+            </a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <div class="header" style="margin-bottom: 3rem; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1 style="color: white;">AI Safety Panel 🛡️</h1>
+                <p style="color: #94a3b8;">Real-time stranger chat moderation and toxicity detection.</p>
+            </div>
+            <form action="{% url 'dashboard:emergency_shutdown' %}" method="POST">
+                {% csrf_token %}
+                <button type="submit" style="background: {% if is_shutdown %}#10b981{% else %}#ef4444{% endif %}; color: white; border: none; padding: 1rem 2rem; border-radius: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-power-off"></i> 
+                    {% if is_shutdown %}ENABLE PLATFORM{% else %}EMERGENCY SHUTDOWN{% endif %}
+                </button>
+            </form>
+        </div>
+
+        <div class="safety-grid">
+            <div class="safety-card">
+                <div class="pulse-dot"></div>
+                <div style="color: #94a3b8; font-size: 0.9rem;">Active Rooms</div>
+                <div style="font-size: 2rem; font-weight: 800; color: white; margin-top: 0.5rem;">{{ active_rooms }}</div>
+            </div>
+            <div class="safety-card">
+                <div style="color: #94a3b8; font-size: 0.9rem;">Reported Users</div>
+                <div style="font-size: 2rem; font-weight: 800; color: #fbbf24; margin-top: 0.5rem;">{{ reported_users }}</div>
+            </div>
+            <div class="safety-card">
+                <div style="color: #94a3b8; font-size: 0.9rem;">Toxic Detections</div>
+                <div style="font-size: 2rem; font-weight: 800; color: #ef4444; margin-top: 0.5rem;">{{ toxic_detections }}</div>
+            </div>
+            <div class="safety-card">
+                <div style="color: #94a3b8; font-size: 0.9rem;">Platform Status</div>
+                <div style="font-size: 1.2rem; font-weight: 800; color: {% if is_shutdown %}#ef4444{% else %}#10b981{% endif %}; margin-top: 0.5rem;">
+                    {% if is_shutdown %}SHUTDOWN ACTIVE{% else %}OPERATIONAL{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="monitor-panel">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h3>Live Stranger Chat Monitor 🎤</h3>
+                    <span style="font-size: 0.8rem; color: #64748b;">Updating every 5s...</span>
+                </div>
+                
+                <div class="room-list">
+                    {% for session in live_sessions %}
+                    <div class="room-item">
+                        <div>
+                            <span style="color: white; font-weight: 700;">Room #{{ session.id }}</span>
+                            <span style="color: #64748b; font-size: 0.85rem; margin-left: 1rem;">
+                                {{ session.user1.username }} vs {{ session.user2.username }} | {{ session.started_at|timesince }}
+                            </span>
+                        </div>
+                        <span class="badge-risk risk-low">ACTIVE</span>
+                    </div>
+                    {% empty %}
+                    <p style="color: #64748b; text-align: center;">No active rooms currently.</p>
+                    {% endfor %}
+                </div>
+
+                <h3 style="margin-top: 3rem; margin-bottom: 1.5rem;">Toxic Phrase Log (Auto-Detected) 🤖</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr style="color: #64748b; font-size: 0.8rem; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <th style="padding: 1rem;">TIMESTAMP</th>
+                        <th style="padding: 1rem;">USER</th>
+                        <th style="padding: 1rem;">PHRASE</th>
+                        <th style="padding: 1rem;">SEVERITY</th>
+                    </tr>
+                    {% for log in toxic_logs %}
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 1rem; font-size: 0.85rem;">{{ log.detected_at|date:"H:i" }}</td>
+                        <td style="padding: 1rem; color: var(--primary);">{{ log.user.username }}</td>
+                        <td style="padding: 1rem; color: #ef4444;">"{{ log.phrase|truncatechars:40 }}"</td>
+                        <td style="padding: 1rem;">
+                            <span class="badge-risk risk-high">{{ log.severity|floatformat:2 }}</span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" style="text-align: center; padding: 2rem; color: #64748b;">No toxic behavior detected yet.</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+
+            <div class="card">
+                <h3>Live Alerts ⚠</h3>
+                <div style="margin-top: 1.5rem;">
+                    <div class="alert-item">
+                        <div style="font-weight: 700; color: #ef4444; margin-bottom: 0.3rem;">TOXICITY ALERT</div>
+                        <p style="color: #94a3b8; font-size: 0.8rem;">High aggression detected in Room #201 via voice analysis.</p>
+                    </div>
+                    <div class="alert-item" style="background: rgba(251, 191, 36, 0.1); border-color: rgba(251, 191, 36, 0.2);">
+                        <div style="font-weight: 700; color: #fbbf24; margin-bottom: 0.3rem;">MULTIPLE REPORTS</div>
+                        <p style="color: #94a3b8; font-size: 0.8rem;">User 'Rahul_X' reported by 3 different users today.</p>
+                    </div>
+                    <div class="alert-item" style="background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.2);">
+                        <div style="font-weight: 700; color: #6366f1; margin-bottom: 0.3rem;">SPAM DETECTED</div>
+                        <p style="color: #94a3b8; font-size: 0.8rem;">Repetitive audio patterns in Room #502.</p>
+                    </div>
+                </div>
+
+                <div style="margin-top: 3rem; background: rgba(16, 185, 129, 0.05); padding: 1.5rem; border-radius: 16px; border: 1px solid rgba(16, 185, 129, 0.2);">
+                    <h4 style="color: #10b981;">Guardian AI Bot 🤖</h4>
+                    <p style="color: #cbd5e1; font-size: 0.85rem; margin-top: 0.5rem;">
+                        Guardian AI is actively monitoring all rooms. Auto-moderation is <b>ENABLED</b>.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

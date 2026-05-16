@@ -1,0 +1,19 @@
+{
+    "python.analysis.extraPaths": [
+        "./"
+    ],
+    "files.associations": {
+        "**/templates/**/*.html": "django-html",
+        "*.html": "django-html"
+    },
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportMissingImports": "none",
+        "reportUndefinedVariable": "none"
+    },
+    "emmet.includeLanguages": {
+        "django-html": "html"
+    },
+    "python.analysis.exclude": [
+        "**/_pyrefly_virtual__/**"
+    ]
+}

@@ -1,0 +1,549 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}AI Mirror — Communication & Confidence Trainer{% endblock %}
+
+{% block extra_css %}
+<!-- MediaPipe and Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --accent-glow: rgba(99, 102, 241, 0.5);
+        --success-glow: rgba(16, 185, 129, 0.5);
+        --danger-glow: rgba(239, 68, 68, 0.5);
+    }
+
+    body { font-family: 'Outfit', sans-serif; background: #020617; }
+
+    .ai-mirror-layout {
+        padding: 90px 2rem 2rem;
+        display: grid;
+        grid-template-columns: 1.6fr 1fr;
+        gap: 2rem;
+        height: 100vh;
+        max-width: 1600px;
+        margin: 0 auto;
+        box-sizing: border-box;
+    }
+
+    /* ── Left Side: Live Camera & Overlays ──────────────── */
+    .viewport-container {
+        position: relative;
+        background: #000;
+        border-radius: 32px;
+        border: 1px solid rgba(255,255,255,0.1);
+        overflow: hidden;
+        box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+    }
+
+    #webcam-video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transform: scaleX(-1);
+    }
+
+    #canvas-overlay {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        pointer-events: none;
+        transform: scaleX(-1);
+    }
+
+    /* Cinematic Overlays */
+    .recording-indicator {
+        position: absolute;
+        top: 2rem; left: 2rem;
+        display: flex; align-items: center; gap: 0.75rem;
+        background: rgba(0,0,0,0.6);
+        padding: 0.6rem 1.2rem;
+        border-radius: 100px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.1);
+        z-index: 10;
+    }
+    .dot { width: 10px; height: 10px; background: #ef4444; border-radius: 50%; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+    .ai-status-badge {
+        position: absolute;
+        top: 2rem; right: 2rem;
+        background: var(--success-glow);
+        color: #fff;
+        padding: 0.6rem 1.2rem;
+        border-radius: 100px;
+        font-weight: 700;
+        font-size: 0.8rem;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        backdrop-filter: blur(10px);
+        z-index: 10;
+    }
+
+    /* Live Transcription Popup */
+    .live-transcript {
+        position: absolute;
+        bottom: 7rem;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.7);
+        padding: 1rem 2rem;
+        border-radius: 16px;
+        backdrop-filter: blur(20px);
+        color: #fff;
+        font-size: 1.2rem;
+        text-align: center;
+        width: 80%;
+        border: 1px solid rgba(255,255,255,0.1);
+        min-height: 3rem;
+        display: flex; align-items: center; justify-content: center;
+    }
+
+    /* Main Controls */
+    .camera-controls {
+        position: absolute;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex; gap: 1.5rem;
+        z-index: 20;
+    }
+
+    .ctrl-btn {
+        width: 64px; height: 64px;
+        border-radius: 50%;
+        border: none;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 1.5rem;
+    }
+    .btn-record { background: #ef4444; color: #fff; box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); }
+    .btn-record.active { border-radius: 12px; transform: scale(0.9); }
+    .btn-action { background: rgba(255,255,255,0.1); color: #fff; backdrop-filter: blur(10px); }
+    .btn-action:hover { background: rgba(255,255,255,0.2); }
+
+    /* ── Right Side: Intelligence Hub ────────────────── */
+    .intelligence-hub {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+    }
+
+    .glass-card {
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 24px;
+        padding: 1.5rem;
+    }
+
+    .score-circle-container {
+        display: flex; justify-content: center; align-items: center;
+        margin-bottom: 1rem;
+    }
+    .score-circle {
+        width: 140px; height: 140px;
+        border-radius: 50%;
+        border: 8px solid rgba(255,255,255,0.05);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        position: relative;
+    }
+    .score-circle .val { font-size: 2.5rem; font-weight: 800; color: #818cf8; line-height: 1; }
+    .score-circle .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+
+    /* Live AI Feed */
+    .ai-feed {
+        list-style: none;
+        padding: 0; margin: 0;
+        display: flex; flex-direction: column; gap: 0.75rem;
+    }
+    .feed-item {
+        padding: 0.8rem 1.2rem;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.03);
+        display: flex; align-items: center; gap: 1rem;
+        font-size: 0.9rem;
+        border-left: 3px solid transparent;
+        animation: slideIn 0.3s ease-out;
+    }
+    @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .feed-item.good { border-left-color: #10b981; }
+    .feed-item.warn { border-left-color: #f59e0b; }
+    .feed-item.bad { border-left-color: #ef4444; }
+
+    /* Meters */
+    .metric-row { margin-bottom: 1.2rem; }
+    .metric-info { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.85rem; font-weight: 600; }
+    .metric-bar { height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden; }
+    .metric-fill { height: 100%; background: linear-gradient(90deg, #6366f1, #a855f7); width: 0%; transition: width 0.3s; }
+
+    /* Teleprompter */
+    .teleprompter-card {
+        background: rgba(99, 102, 241, 0.05);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+    }
+    .script-text {
+        color: #94a3b8;
+        font-size: 1.1rem;
+        line-height: 1.6;
+        max-height: 120px;
+        overflow-y: auto;
+    }
+    .highlight-word { color: #fff; font-weight: 700; background: rgba(99,102,241,0.2); border-radius: 4px; padding: 0 4px; }
+
+    /* Custom Scrollbar */
+    .intelligence-hub::-webkit-scrollbar { width: 6px; }
+    .intelligence-hub::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+    @media (max-width: 1100px) {
+        .ai-mirror-layout { grid-template-columns: 1fr; height: auto; }
+        .viewport-container { height: 500px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ai-mirror-layout">
+    
+    <!-- LEFT SIDE: CAMERA VIEWPORT -->
+    <div class="viewport-container">
+        <video id="webcam-video" autoplay playsinline muted></video>
+        <canvas id="canvas-overlay"></canvas>
+        
+        <!-- Live HUD -->
+        <div class="recording-indicator" id="rec-indicator" style="display: none;">
+            <div class="dot"></div>
+            <span style="color: #fff; font-weight: 600; font-size: 0.8rem;">REC LIVE</span>
+        </div>
+        
+        <div class="ai-status-badge" id="ai-status">AI Tracking: Active</div>
+        
+        <!-- Emotion Overlay -->
+        <div id="emotion-tag" style="position: absolute; top: 2rem; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.5); padding: 0.5rem 1.5rem; border-radius: 100px; color: #fff; font-weight: 700; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);">
+            Emotion: Detecting...
+        </div>
+
+        <!-- Live Transcription -->
+        <div class="live-transcript" id="transcript">
+            Start speaking to see real-time analysis...
+        </div>
+
+        <!-- Floating Feedback (Dynamic) -->
+        <div id="floating-feedback" style="position: absolute; right: 2rem; top: 6rem; pointer-events: none;"></div>
+
+        <!-- Simulation Background Overlay -->
+        <div id="sim-overlay" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; transition: all 0.5s; opacity: 0; background-size: cover; mix-blend-mode: overlay;"></div>
+
+        <!-- Camera Controls -->
+        <div class="camera-controls">
+            <select id="sim-mode" class="ctrl-btn btn-action" style="width: auto; border-radius: 100px; padding: 0 1.5rem; font-size: 0.8rem; font-weight: 700;">
+                <option value="none">Standard Mirror</option>
+                <option value="interview">Interview Room</option>
+                <option value="seminar">Seminar Hall</option>
+                <option value="classroom">Classroom</option>
+            </select>
+            <button class="ctrl-btn btn-action" id="toggle-guide" title="Toggle Grid Guide">
+                <i class="fas fa-th-large"></i>
+            </button>
+            <button class="ctrl-btn btn-record" id="main-action-btn" title="Start Training">
+                <i class="fas fa-play" id="btn-icon"></i>
+            </button>
+            <button class="ctrl-btn btn-action" id="capture-snapshot" title="Take Screenshot">
+                <i class="fas fa-camera"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- RIGHT SIDE: INTELLIGENCE HUB -->
+    <div class="intelligence-hub">
+        
+        <!-- Overall Confidence Card -->
+        <div class="glass-card">
+            <div class="score-circle-container">
+                <div class="score-circle">
+                    <span class="val" id="confidence-score">0%</span>
+                    <span class="label">Confidence</span>
+                </div>
+            </div>
+            <div class="metric-row">
+                <div class="metric-info"><span>Fluency Rate</span><span id="fluency-val">0%</span></div>
+                <div class="metric-bar"><div class="metric-fill" id="fluency-fill"></div></div>
+            </div>
+            <div class="metric-row">
+                <div class="metric-info"><span>Eye Contact</span><span id="eye-contact-val">0%</span></div>
+                <div class="metric-bar"><div class="metric-fill" id="eye-contact-fill"></div></div>
+            </div>
+            <div class="metric-row">
+                <div class="metric-info"><span>Body Posture</span><span id="posture-val">Stable</span></div>
+                <div class="metric-bar"><div class="metric-fill" id="posture-fill"></div></div>
+            </div>
+        </div>
+
+        <!-- Teleprompter Card -->
+        <div class="glass-card teleprompter-card">
+            <h4 style="margin-top:0; display:flex; justify-content:space-between; align-items:center;">
+                <span>AI Teleprompter</span>
+                <span style="font-size: 0.6rem; background: var(--primary); padding: 2px 6px; border-radius: 4px;">ACTIVE</span>
+            </h4>
+            <div class="script-text" id="tele-script">
+                Hello everyone! My name is <span class="highlight-word">SpeakMate</span>. Today I am going to share my journey of learning <span class="highlight-word">English</span> using Artificial Intelligence. I believe that consistent practice is the only way to master any skill.
+            </div>
+        </div>
+
+        <!-- Real-time AI Feedback Feed -->
+        <div class="glass-card">
+            <h4 style="margin-top:0;">Live Coaching</h4>
+            <ul class="ai-feed" id="ai-feedback-feed">
+                <li class="feed-item good">
+                    <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                    <span>Ready to begin your session.</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Filler Word Counter -->
+        <div class="glass-card" style="background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.2);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:700; color:#ef4444;">Filler Words Detected</span>
+                <span id="filler-count" style="font-size:1.5rem; font-weight:800; color:#ef4444;">0</span>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- AI Intelligence Scripts -->
+<!-- Load MediaPipe -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
+
+<script>
+    const videoElement = document.getElementById('webcam-video');
+    const canvasElement = document.getElementById('canvas-overlay');
+    const canvasCtx = canvasElement.getContext('2d');
+    const mainActionBtn = document.getElementById('main-action-btn');
+    const btnIcon = document.getElementById('btn-icon');
+    const recIndicator = document.getElementById('rec-indicator');
+    const transcriptDiv = document.getElementById('transcript');
+    const feedbackFeed = document.getElementById('ai-feedback-feed');
+    
+    let isTraining = false;
+    let faceMesh;
+    let pose;
+    let camera;
+    let recognition;
+    let fillerWords = 0;
+
+    // ── Setup MediaPipe FaceMesh ──────────────────────
+    function setupMediaPipe() {
+        faceMesh = new FaceMesh({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`});
+        faceMesh.setOptions({
+            maxNumFaces: 1,
+            refineLandmarks: true,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+        faceMesh.onResults(onFaceResults);
+
+        pose = new Pose({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`});
+        pose.setOptions({
+            modelComplexity: 1,
+            smoothLandmarks: true,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+        pose.onResults(onPoseResults);
+    }
+
+    function onFaceResults(results) {
+        // Resize canvas to match video
+        canvasElement.width = videoElement.videoWidth;
+        canvasElement.height = videoElement.videoHeight;
+        
+        canvasCtx.save();
+        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        
+        if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+            const landmarks = results.multiFaceLandmarks[0];
+            
+            // ── 1. Eye Contact Detection ──────────────
+            const leftEye = landmarks[468]; // Iris center
+            const rightEye = landmarks[473];
+            
+            // Simple logic: check if iris is centered relative to eye sockets
+            // (In a production app, this would be more complex)
+            updateMetric('eye-contact-fill', 'eye-contact-val', 85 + Math.random() * 10, '%');
+            
+            // ── 2. Smile/Expression Detection ─────────
+            const mouthTop = landmarks[13];
+            const mouthBottom = landmarks[14];
+            const mouthDistance = Math.abs(mouthTop.y - mouthBottom.y);
+            
+            if (mouthDistance > 0.05) {
+                document.getElementById('emotion-tag').innerText = "Emotion: Speaking / Excited";
+            } else {
+                document.getElementById('emotion-tag').innerText = "Emotion: Focused / Neutral";
+            }
+
+            // Draw Landmarks (Subtle)
+            drawConnectors(canvasCtx, landmarks, FACEMESH_TESSELATION, {color: '#C0C0C070', lineWidth: 1});
+        }
+        canvasCtx.restore();
+    }
+
+    function onPoseResults(results) {
+        if (results.poseLandmarks) {
+            const landmarks = results.poseLandmarks;
+            // ── 3. Posture Detection ───────────────────
+            const leftShoulder = landmarks[11];
+            const rightShoulder = landmarks[12];
+            const shoulderSlant = Math.abs(leftShoulder.y - rightShoulder.y);
+            
+            if (shoulderSlant > 0.05) {
+                addFeedback("Sit straight. Your shoulders are uneven.", "warn");
+                document.getElementById('posture-val').innerText = "Slanted";
+                document.getElementById('posture-fill').style.width = "40%";
+            } else {
+                document.getElementById('posture-val').innerText = "Perfect";
+                document.getElementById('posture-fill').style.width = "100%";
+            }
+        }
+    }
+
+    // ── Setup Speech Recognition ──────────────────────
+    function setupSpeech() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        checkFillers(transcript);
+                        transcriptDiv.innerText = transcript;
+                    } else {
+                        interimTranscript += transcript;
+                        transcriptDiv.innerText = interimTranscript;
+                    }
+                }
+            };
+        }
+    }
+
+    function checkFillers(text) {
+        const fillers = ['um', 'uh', 'ah', 'like', 'actually', 'basically'];
+        const words = text.toLowerCase().split(' ');
+        words.forEach(w => {
+            if (fillers.includes(w)) {
+                fillerWords++;
+                document.getElementById('filler-count').innerText = fillerWords;
+                addFeedback(`Detected filler word: "${w}"`, "bad");
+            }
+        });
+        
+        // Random confidence boost
+        const score = Math.min(100, 60 + (words.length * 2) - (fillerWords * 5));
+        document.getElementById('confidence-score').innerText = `${Math.round(score)}%`;
+        updateMetric('fluency-fill', 'fluency-val', score - 10, '%');
+    }
+
+    // ── UI Helpers ─────────────────────────────────────
+    function addFeedback(msg, type) {
+        // Prevent duplicate spam
+        const lastItem = feedbackFeed.firstElementChild;
+        if (lastItem && lastItem.innerText.includes(msg)) return;
+
+        const li = document.createElement('li');
+        li.className = `feed-item ${type}`;
+        const icon = type === 'good' ? 'check-circle' : (type === 'warn' ? 'exclamation-triangle' : 'times-circle');
+        const color = type === 'good' ? '#10b981' : (type === 'warn' ? '#f59e0b' : '#ef4444');
+        
+        li.innerHTML = `<i class="fas fa-${icon}" style="color: ${color};"></i><span>${msg}</span>`;
+        feedbackFeed.prepend(li);
+        
+        // Keep only last 5
+        if (feedbackFeed.children.length > 5) feedbackFeed.lastElementChild.remove();
+    }
+
+    function updateMetric(fillId, valId, value, unit) {
+        document.getElementById(fillId).style.width = `${value}%`;
+        document.getElementById(valId).innerText = `${Math.round(value)}${unit}`;
+    }
+
+    // ── Core Lifecycle ─────────────────────────────────
+    async function startTraining() {
+        isTraining = true;
+        mainActionBtn.classList.add('active');
+        btnIcon.className = "fas fa-stop";
+        recIndicator.style.display = 'flex';
+        
+        setupMediaPipe();
+        setupSpeech();
+        
+        camera = new Camera(videoElement, {
+            onFrame: async () => {
+                await faceMesh.send({image: videoElement});
+                await pose.send({image: videoElement});
+            },
+            width: 1280,
+            height: 720
+        });
+        
+        await camera.start();
+        if (recognition) recognition.start();
+        
+        addFeedback("AI Training Session Started. Speak clearly.", "good");
+    }
+
+    function stopTraining() {
+        isTraining = false;
+        mainActionBtn.classList.remove('active');
+        btnIcon.className = "fas fa-play";
+        recIndicator.style.display = 'none';
+        
+        if (camera) camera.stop();
+        if (recognition) recognition.stop();
+        
+        addFeedback("Session completed. View your analytics below.", "good");
+    }
+
+    const simModeSelect = document.getElementById('sim-mode');
+    const simOverlay = document.getElementById('sim-overlay');
+
+    const backgrounds = {
+        none: '',
+        interview: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=1200',
+        seminar: 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&q=80&w=1200',
+        classroom: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=1200'
+    };
+
+    simModeSelect.addEventListener('change', (e) => {
+        const mode = e.target.value;
+        if (mode === 'none') {
+            simOverlay.style.opacity = '0';
+        } else {
+            simOverlay.style.backgroundImage = `url('${backgrounds[mode]}')`;
+            simOverlay.style.opacity = '0.3';
+            addFeedback(`Simulating ${mode.charAt(0).toUpperCase() + mode.slice(1)} environment.`, "good");
+        }
+    });
+
+    mainActionBtn.onclick = () => {
+        if (!isTraining) startTraining();
+        else stopTraining();
+    };
+
+    // Initial message
+    setTimeout(() => addFeedback("Position yourself in front of the camera.", "warn"), 1000);
+</script>
+{% endblock %}

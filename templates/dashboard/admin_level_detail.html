@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .admin-container {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        min-height: calc(100vh - 80px);
+        margin-top: 80px;
+    }
+
+    .sidebar { background: #0f172a; border-right: 1px solid rgba(255,255,255,0.05); padding: 2rem; }
+    .main-content { padding: 3rem; background: #020617; }
+
+    .menu-item {
+        display: flex;
+        align-items: center; gap: 1rem; padding: 1rem 1.5rem; border-radius: 12px;
+        color: #94a3b8; text-decoration: none; transition: 0.3s;
+    }
+
+    .menu-item:hover, .menu-item.active { background: rgba(99, 102, 241, 0.1); color: white; }
+
+    .concept-card {
+        background: #1e293b;
+        border-radius: 20px;
+        padding: 1.5rem;
+        border: 1px solid rgba(255,255,255,0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .btn-add {
+        background: var(--primary);
+        color: white;
+        padding: 0.8rem 1.5rem;
+        border-radius: 12px;
+        border: none;
+        font-weight: 700;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <aside class="sidebar">
+        <h2 style="color: white; margin-bottom: 2rem; font-size: 1.2rem;">ADMIN PANEL 🔥</h2>
+        <nav class="sidebar-menu">
+            <a href="{% url 'dashboard:admin_panel' %}" class="menu-item">
+                <i class="fas fa-chart-pie"></i> Overview
+            </a>
+            <a href="{% url 'dashboard:admin_users' %}" class="menu-item">
+                <i class="fas fa-users"></i> User Management
+            </a>
+            <a href="{% url 'dashboard:admin_content' %}" class="menu-item active">
+                <i class="fas fa-book"></i> Content Manager
+            </a>
+            <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.05); margin: 1.5rem 0;">
+            <a href="{% url 'dashboard:admin_content' %}" class="menu-item">
+                <i class="fas fa-arrow-left"></i> Back to Levels
+            </a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem;">
+            <div>
+                <h1 style="color: white;">Level {{ level.number }}: {{ level.name }} 📚</h1>
+                <p style="color: #94a3b8;">Manage concepts and learning phases for this level.</p>
+            </div>
+            <button class="btn-add"><i class="fas fa-plus"></i> Add New Concept</button>
+        </div>
+
+        <div class="concepts-list">
+            {% for concept in concepts %}
+            <div class="concept-card">
+                <div>
+                    <h3 style="color: white;">{{ concept.name }}</h3>
+                    <p style="color: #64748b; font-size: 0.85rem;">Phases: 1-Learning, 2-Examples, 3-Fill Blanks, 4-Speaking</p>
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <a href="{% url 'dashboard:admin_concept_edit' concept.id %}" class="menu-item" style="padding: 0.5rem 1rem; font-size: 0.8rem;"><i class="fas fa-edit"></i> Edit</a>
+                    
+                    <form action="{% url 'dashboard:admin_concept_delete' concept.id %}" method="POST" onsubmit="return confirm('Are you sure you want to delete this concept?');" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="menu-item" style="padding: 0.5rem 1rem; font-size: 0.8rem; color: #ef4444; background: none; border: none; cursor: pointer;">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% empty %}
+            <p style="color: #64748b; text-align: center;">No concepts found in this level.</p>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+{% endblock %}

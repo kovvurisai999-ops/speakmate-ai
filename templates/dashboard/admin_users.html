@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .admin-container {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        min-height: calc(100vh - 80px);
+        margin-top: 80px;
+    }
+
+    .sidebar { background: #0f172a; border-right: 1px solid rgba(255,255,255,0.05); padding: 2rem; }
+    .main-content { padding: 3rem; background: #020617; }
+
+    .menu-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        color: #94a3b8;
+        text-decoration: none;
+        transition: 0.3s;
+    }
+
+    .menu-item:hover, .menu-item.active { background: rgba(99, 102, 241, 0.1); color: white; }
+
+    .search-box {
+        background: #1e293b;
+        border: 1px solid rgba(255,255,255,0.05);
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        width: 100%;
+        color: white;
+        margin-bottom: 2rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .search-box input {
+        background: none;
+        border: none;
+        color: white;
+        width: 100%;
+        outline: none;
+    }
+
+    .user-table-card {
+        background: #1e293b;
+        border-radius: 24px;
+        border: 1px solid rgba(255,255,255,0.05);
+        overflow: hidden;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 1.5rem; color: #94a3b8; font-size: 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    td { padding: 1.5rem; color: #cbd5e1; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    tr:last-child td { border-bottom: none; }
+
+    .user-info { display: flex; align-items: center; gap: 1rem; }
+    .avatar-circle { width: 40px; height: 40px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; }
+
+    .badge { padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+    .badge-admin { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+    .badge-premium { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+    .badge-student { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+
+    .action-btn { background: none; border: none; color: #94a3b8; cursor: pointer; transition: 0.3s; }
+    .action-btn:hover { color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <aside class="sidebar">
+        <h2 style="color: white; margin-bottom: 2rem; font-size: 1.2rem;">ADMIN PANEL 🔥</h2>
+        <nav class="sidebar-menu">
+            <a href="{% url 'dashboard:admin_panel' %}" class="menu-item">
+                <i class="fas fa-chart-pie"></i> Overview
+            </a>
+            <a href="{% url 'dashboard:admin_users' %}" class="menu-item active">
+                <i class="fas fa-users"></i> User Management
+            </a>
+            <a href="{% url 'dashboard:admin_content' %}" class="menu-item">
+                <i class="fas fa-book"></i> Content Manager
+            </a>
+            <a href="{% url 'dashboard:admin_safety' %}" class="menu-item">
+                <i class="fas fa-shield-alt"></i> AI Safety
+            </a>
+            <a href="{% url 'dashboard:admin_revenue' %}" class="menu-item">
+                <i class="fas fa-file-invoice-dollar"></i> Revenue
+            </a>
+            <a href="{% url 'dashboard:admin_logs' %}" class="menu-item">
+                <i class="fas fa-bug"></i> Error Logs
+            </a>
+            <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.05); margin: 1.5rem 0;">
+            <a href="{% url 'dashboard:index' %}" class="menu-item">
+                <i class="fas fa-arrow-left"></i> Back to User View
+            </a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <div class="header" style="margin-bottom: 3rem;">
+            <h1 style="color: white;">User Management 👥</h1>
+            <p style="color: #94a3b8;">Manage students, premium users, and moderators.</p>
+        </div>
+
+        <form method="GET" action="{% url 'dashboard:admin_users' %}">
+            <div class="search-box">
+                <i class="fas fa-search" style="color: #64748b;"></i>
+                <input type="text" name="q" placeholder="Search by username or email..." value="{{ query }}">
+                <button type="submit" style="background: var(--primary); color: white; border: none; padding: 0.5rem 1.5rem; border-radius: 8px; cursor: pointer;">Search</button>
+            </div>
+        </form>
+
+        <div class="user-table-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>USER</th>
+                        <th>ROLE</th>
+                        <th>STREAK</th>
+                        <th>XP</th>
+                        <th>JOINED</th>
+                        <th>ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr>
+                        <td>
+                            <div class="user-info">
+                                <div class="avatar-circle">{{ u.username|make_list|first|upper }}</div>
+                                <div>
+                                    <div style="font-weight: 600; color: white;">{{ u.username }}</div>
+                                    <div style="font-size: 0.8rem; color: #64748b;">{{ u.email }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if u.is_superuser %}
+                            <span class="badge badge-admin">ADMIN</span>
+                            {% elif u.is_premium %}
+                            <span class="badge badge-premium">PREMIUM</span>
+                            {% else %}
+                            <span class="badge badge-student">STUDENT</span>
+                            {% endif %}
+                        </td>
+                        <td>🔥 {{ u.streak }}</td>
+                        <td>⭐ {{ u.xp }}</td>
+                        <td>{{ u.date_joined|date:"M d, Y" }}</td>
+                        <td>
+                            <div style="display: flex; gap: 1rem;">
+                                <a href="{% url 'dashboard:admin_user_detail' u.id %}" class="action-btn" title="View Profile"><i class="fas fa-eye"></i></a>
+                                <button class="action-btn" title="Edit User"><i class="fas fa-edit"></i></button>
+                                <button class="action-btn" title="Ban User" style="color: #ef4444;"><i class="fas fa-ban"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" style="text-align: center;">No users found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+{% endblock %}

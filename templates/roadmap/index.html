@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Learning Roadmap — SpeakMate AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ── Page Layout ─────────────────────────────────── */
+    .roadmap-page {
+        padding: 100px 2rem 6rem;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    /* ── Page Header ─────────────────────────────────── */
+    .rm-header {
+        text-align: center;
+        margin-bottom: 5rem;
+    }
+    .rm-header .tag {
+        display: inline-block;
+        padding: 0.4rem 1.2rem;
+        border-radius: 100px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        background: rgba(99,102,241,0.12);
+        color: #818cf8;
+        border: 1px solid rgba(99,102,241,0.25);
+        margin-bottom: 1.2rem;
+    }
+    .rm-header h1 {
+        font-size: clamp(2rem, 5vw, 3.5rem);
+        font-weight: 800;
+        background: linear-gradient(120deg, #fff 30%, #818cf8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 1rem;
+        line-height: 1.2;
+    }
+    .rm-header p { color: var(--text-muted); font-size: 1.1rem; }
+
+    /* ── Vertical Timeline ───────────────────────────── */
+    .timeline {
+        position: relative;
+    }
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 28px;
+        top: 0; bottom: 0;
+        width: 3px;
+        background: linear-gradient(to bottom, #6366f1, #ec4899, #f59e0b, #10b981, #3b82f6, #ef4444, #06b6d4, #f43f5e);
+        border-radius: 10px;
+        opacity: 0.35;
+    }
+
+    /* ── Level Block ─────────────────────────────────── */
+    .level-block {
+        position: relative;
+        margin-bottom: 3.5rem;
+        padding-left: 72px;
+    }
+    .level-dot {
+        position: absolute;
+        left: 14px;
+        top: 6px;
+        width: 30px; height: 30px;
+        border-radius: 50%;
+        background: var(--lc);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.7rem;
+        font-weight: 800;
+        color: #fff;
+        box-shadow: 0 0 16px var(--lc);
+        z-index: 2;
+    }
+    .level-label {
+        display: inline-block;
+        padding: 0.3rem 0.9rem;
+        border-radius: 100px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        background: rgba(var(--lc-rgb), 0.12);
+        color: var(--lc);
+        border: 1px solid rgba(var(--lc-rgb), 0.25);
+        margin-bottom: 0.6rem;
+    }
+    .level-title {
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+        color: #fff;
+    }
+    .level-desc {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        margin-bottom: 1.2rem;
+    }
+
+    /* ── Concepts Grid ───────────────────────────────── */
+    .concepts-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 0.85rem;
+    }
+
+    /* ── Concept Card  (clickable = has DB entry) ─────── */
+    .concept-card {
+        background: var(--bg-card);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 1rem 1.2rem;
+        transition: var(--transition);
+        text-decoration: none;
+        display: block;
+        position: relative;
+        overflow: hidden;
+    }
+    .concept-card.has-content {
+        cursor: pointer;
+        border-color: rgba(var(--lc-rgb), 0.3);
+    }
+    .concept-card.has-content:hover {
+        transform: translateY(-4px);
+        background: rgba(var(--lc-rgb), 0.08);
+        border-color: var(--lc);
+        box-shadow: 0 8px 30px rgba(var(--lc-rgb), 0.2);
+    }
+    .concept-card .c-name {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #e2e8f0;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+    .concept-card.has-content .c-name {
+        color: #fff;
+    }
+    .concept-tags {
+        display: flex; flex-wrap: wrap; gap: 0.35rem;
+    }
+    .concept-tags span {
+        font-size: 0.65rem;
+        padding: 0.15rem 0.5rem;
+        border-radius: 6px;
+        background: rgba(255,255,255,0.05);
+        color: var(--text-muted);
+    }
+    /* "Learn" badge on cards with content */
+    .learn-badge {
+        position: absolute;
+        top: 10px; right: 10px;
+        background: var(--lc);
+        color: #fff;
+        font-size: 0.6rem;
+        font-weight: 700;
+        padding: 0.2rem 0.5rem;
+        border-radius: 100px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+    }
+
+    @media (max-width: 600px) {
+        .concepts-grid { grid-template-columns: 1fr 1fr; }
+        .roadmap-page { padding-top: 90px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="roadmap-page">
+    <div class="rm-header">
+        <span class="tag">📍 Your Journey</span>
+        <h1>Complete Spoken English Roadmap</h1>
+        <p>Click any highlighted concept to start learning. Your path from beginner to AI-powered fluency.</p>
+    </div>
+
+    <div class="timeline">
+        {% for level in levels %}
+        {% comment %}Compute inline CSS variables per level{% endcomment %}
+        <div class="level-block" style="--lc: {{ level.color }};">
+            <div class="level-dot">{{ level.number }}</div>
+            <span class="level-label">Level {{ level.number }}</span>
+            <h2 class="level-title">{{ level.title }}</h2>
+            <p class="level-desc">{{ level.description }}</p>
+
+            <div class="concepts-grid">
+                {% for concept in level.concepts.all %}
+                <a href="{% url 'roadmap:concept_detail' concept.slug %}"
+                   class="concept-card has-content">
+                    <span class="learn-badge">Learn ▶</span>
+                    <span class="c-name">{{ concept.name }}</span>
+                </a>
+                {% empty %}
+                {# Static placeholder cards when no DB concept exists #}
+                <div class="concept-card">
+                    <span class="c-name" style="color:var(--text-muted);">Coming Soon…</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

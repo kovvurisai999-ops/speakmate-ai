@@ -1,0 +1,270 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .chat-container {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 80px);
+        margin-top: 80px;
+        background: #0a0f1d;
+    }
+
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .message {
+        max-width: 70%;
+        padding: 1.2rem 1.5rem;
+        border-radius: 20px;
+        position: relative;
+    }
+
+    .message.user {
+        align-self: flex-end;
+        background: var(--primary);
+        color: white;
+        border-bottom-right-radius: 4px;
+    }
+
+    .message.ai {
+        align-self: flex-start;
+        background: var(--bg-card);
+        color: white;
+        border-bottom-left-radius: 4px;
+        border: 1px solid var(--glass-border);
+    }
+
+    .chat-input-area {
+        padding: 2rem;
+        background: var(--bg-card);
+        border-top: 1px solid var(--glass-border);
+    }
+
+    .input-wrapper {
+        max-width: 800px;
+        margin: 0 auto;
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        background: var(--bg-dark);
+        padding: 0.5rem 1rem;
+        border-radius: 100px;
+        border: 1px solid var(--glass-border);
+    }
+
+    .chat-input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: white;
+        padding: 0.8rem;
+        outline: none;
+        font-size: 1rem;
+    }
+
+    .action-btn {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: var(--transition);
+        border: none;
+    }
+
+    .btn-mic {
+        background: rgba(99, 102, 241, 0.1);
+        color: var(--primary);
+    }
+
+    .btn-send {
+        background: var(--primary);
+        color: white;
+    }
+
+    .analysis-feedback {
+        font-size: 0.8rem;
+        margin-top: 0.5rem;
+        color: rgba(255, 255, 255, 0.7);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        padding-top: 0.5rem;
+    }
+
+    .message.ai.thinking {
+        background: transparent;
+        border: 1px dashed var(--glass-border);
+        color: var(--text-muted);
+        font-style: italic;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <div class="chat-messages" id="chat-messages">
+        {% if not OPENAI_API_KEY and not LOCAL_MODE %}
+        <div style="background: rgba(244, 63, 94, 0.1); color: var(--accent); padding: 1rem; border-radius: 12px; margin-bottom: 1rem; font-size: 0.85rem; border: 1px solid var(--accent);">
+            <i class="fas fa-exclamation-triangle"></i> <strong>Note:</strong> OpenAI API Key is missing. Running in <strong>Demo Mode</strong> with limited responses. Please add your key to the <code>.env</code> file.
+        </div>
+        {% endif %}
+        <div class="message ai">
+            Hey {{ user.username }}! I'm your SpeakMate AI buddy. How's your day going? We can practice some English today!
+        </div>
+    </div>
+
+    <div class="chat-input-area">
+        <div class="input-wrapper">
+            <button class="action-btn btn-mic" id="mic-btn">
+                <i class="fas fa-microphone"></i>
+            </button>
+            <input type="text" class="chat-input" id="chat-input" placeholder="Type or speak in English/Telugu...">
+            <button class="action-btn btn-send" id="send-btn">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const chatMessages = document.getElementById('chat-messages');
+    const chatInput = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('send-btn');
+    const micBtn = document.getElementById('mic-btn');
+
+    function appendMessage(content, role, feedback = null, translated = null) {
+        const div = document.createElement('div');
+        div.className = `message ${role}`;
+        let html = '';
+        
+        if (translated && role === 'ai') {
+            html += `<div style="color: var(--primary); font-size: 0.9rem; margin-bottom: 0.5rem; font-weight: 600;">English: ${translated}</div>`;
+        }
+        
+        html += content;
+        
+        if (feedback) {
+            html += `<div class="analysis-feedback"><i class="fas fa-wand-magic-sparkles"></i> ${feedback}</div>`;
+        }
+        div.innerHTML = html;
+        chatMessages.appendChild(div);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    async function sendMessage() {
+        const text = chatInput.value.trim();
+        if (!text) return;
+
+        appendMessage(text, 'user');
+        chatInput.value = '';
+
+        // Add thinking indicator
+        const thinkingDiv = document.createElement('div');
+        thinkingDiv.className = 'message ai thinking';
+        thinkingDiv.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> SpeakMate is thinking...';
+        chatMessages.appendChild(thinkingDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        try {
+            console.log("Sending request to server...");
+            const response = await fetch('{% url "chat:send" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ message: text })
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `Server error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Response received:", data);
+            
+            // Remove thinking indicator only on success
+            thinkingDiv.remove();
+            appendMessage(data.response, 'ai', data.feedback, data.translated);
+            
+            if (data.audio_url) {
+                const audio = new Audio(data.audio_url);
+                audio.play();
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            thinkingDiv.innerHTML = `<span style="color: var(--accent);">Error: ${error.message}. Please try again.</span>`;
+        }
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+
+    // Voice recognition logic
+    let mediaRecorder;
+    let audioChunks = [];
+    let isRecording = false;
+
+    micBtn.addEventListener('click', async () => {
+        if (!isRecording) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    const formData = new FormData();
+                    formData.append('audio', audioBlob, 'recording.wav');
+
+                    micBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    
+                    try {
+                        const response = await fetch('{% url "speech:transcribe" %}', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const data = await response.json();
+                        if (data.text) {
+                            chatInput.value = data.text;
+                            sendMessage();
+                        }
+                    } catch (error) {
+                        console.error('Transcription error:', error);
+                    } finally {
+                        micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+                    }
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                micBtn.style.color = 'var(--accent)';
+                micBtn.innerHTML = '<i class="fas fa-stop"></i>';
+            } catch (err) {
+                console.error("Microphone access denied:", err);
+            }
+        } else {
+            mediaRecorder.stop();
+            isRecording = false;
+            micBtn.style.color = 'var(--primary)';
+            micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+        }
+    });
+</script>
+{% endblock %}

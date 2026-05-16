@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<section class="section-padding">
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem;">
+            <div>
+                <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;">Interview Report</h1>
+                <p class="text-muted">Role: <strong style="color: white;">{{ session.position }}</strong> | Date: {{ session.created_at|date:"M d, Y" }}</p>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 3rem; font-weight: 800; color: var(--primary);">{{ session.overall_score }}%</div>
+                <span style="color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 1rem;">Overall Score</span>
+                <a href="{% url 'interview:download_report' session.pk %}" class="btn btn-outline" style="padding: 0.6rem 1.2rem; font-size: 0.85rem;">
+                    <i class="fas fa-file-pdf"></i> Download PDF Report
+                </a>
+            </div>
+        </div>
+
+        <div style="background: var(--bg-card); border-radius: 32px; border: 1px solid var(--glass-border); padding: 3rem; margin-bottom: 3rem;">
+            <h3 style="margin-bottom: 1.5rem;"><i class="fas fa-comment-alt-check text-primary"></i> AI Feedback & Mistakes</h3>
+            <p style="line-height: 1.8; color: var(--text-muted); font-size: 1.1rem;">{{ session.feedback }}</p>
+        </div>
+
+        <h3 style="margin-bottom: 2rem;">Question Breakdown</h3>
+        <div style="display: grid; gap: 1.5rem;">
+            {% for q in session.questions.all %}
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 24px; padding: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+                    <h4 style="flex: 1; margin-right: 2rem; font-weight: 500; opacity: 0.9;">{{ q.question_text }}</h4>
+                    <span style="background: var(--bg-dark); padding: 0.5rem 1rem; border-radius: 12px; font-weight: 600;">{{ q.score }}%</span>
+                </div>
+                
+                <div style="background: var(--bg-dark); border-radius: 16px; padding: 1.5rem;">
+                    <span style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase;">Your Answer</span>
+                    <p style="margin-bottom: 0; font-style: italic; opacity: 0.8;">"{{ q.user_answer|default:'No answer recorded' }}"</p>
+                </div>
+
+                <div style="margin-top: 1.5rem; color: var(--text-muted); font-size: 0.95rem;">
+                    <strong style="color: var(--secondary);"><i class="fas fa-lightbulb"></i> AI Insight:</strong> {{ q.ai_feedback|default:'AI is still analyzing this response.' }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div style="text-align: center; margin-top: 4rem;">
+            <a href="{% url 'interview:list' %}" class="btn btn-outline-primary">Back to Interviews</a>
+            <a href="{% url 'interview:start' %}" class="btn btn-primary" style="margin-left: 1rem;">Start New Interview</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

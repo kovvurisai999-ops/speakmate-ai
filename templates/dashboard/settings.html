@@ -1,0 +1,311 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .dashboard-container {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        min-height: calc(100vh - 80px);
+        margin-top: 80px;
+    }
+
+    .sidebar {
+        background: var(--bg-card);
+        border-right: 1px solid var(--glass-border);
+        padding: 2rem;
+    }
+
+    .sidebar-menu {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .menu-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        color: var(--text-muted);
+        font-weight: 500;
+        transition: var(--transition);
+    }
+
+    .menu-item:hover, .menu-item.active {
+        background: rgba(99, 102, 241, 0.1);
+        color: var(--primary);
+    }
+
+    .main-content {
+        padding: 3rem;
+        background: #0a0f1d;
+    }
+
+    .settings-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 2rem;
+    }
+
+    .settings-card {
+        background: var(--bg-card);
+        padding: 2rem;
+        border-radius: 24px;
+        border: 1px solid var(--glass-border);
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .settings-card h3 {
+        font-size: 1.2rem;
+        color: var(--primary);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .form-group label {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+    }
+
+    select, input[type="range"] {
+        background: var(--bg-dark);
+        border: 1px solid var(--glass-border);
+        color: white;
+        padding: 0.8rem;
+        border-radius: 10px;
+        outline: none;
+    }
+
+    .toggle-group {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    /* Switch styling */
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+    }
+
+    .switch input { opacity: 0; width: 0; height: 0; }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: #333;
+        transition: .4s;
+        border-radius: 34px;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 16px; width: 16px;
+        left: 4px; bottom: 4px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+
+    input:checked + .slider { background-color: var(--primary); }
+    input:checked + .slider:before { transform: translateX(26px); }
+
+    .btn-save {
+        background: var(--primary);
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 12px;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 2rem;
+        transition: var(--transition);
+        width: 200px;
+    }
+
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <aside class="sidebar">
+        <div class="sidebar-menu">
+            <a href="{% url 'dashboard:index' %}" class="menu-item">
+                <i class="fas fa-th-large"></i> Overview
+            </a>
+            <a href="{% url 'avatar:teacher' %}" class="menu-item">
+                <i class="fas fa-graduation-cap"></i> AI Teacher
+            </a>
+            <a href="{% url 'chat:index' %}" class="menu-item">
+                <i class="fas fa-comments"></i> AI Chatbot
+            </a>
+            <a href="{% url 'pronunciation:index' %}" class="menu-item">
+                <i class="fas fa-bullhorn"></i> Pronunciation
+            </a>
+            <a href="{% url 'interview:list' %}" class="menu-item">
+                <i class="fas fa-user-tie"></i> Interview AI
+            </a>
+            <a href="{% url 'roadmap:index' %}" class="menu-item">
+                <i class="fas fa-map-signs"></i> Learning Roadmap
+            </a>
+            <a href="{% url 'dashboard:analytics' %}" class="menu-item">
+                <i class="fas fa-chart-line"></i> Analytics
+            </a>
+            <a href="{% url 'dashboard:settings' %}" class="menu-item active">
+                <i class="fas fa-cog"></i> Settings
+            </a>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <div class="welcome-header" style="margin-bottom: 3rem; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1>Settings ⚙️</h1>
+                <p style="color: var(--text-muted);">Customize your AI learning experience.</p>
+            </div>
+            <a href="{% url 'dashboard:index' %}" class="btn-save" style="text-decoration: none; padding: 0.8rem 1.5rem; background: var(--bg-card); border: 1px solid var(--glass-border); color: white;">
+                <i class="fas fa-arrow-left"></i> Back to Home
+            </a>
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="settings-grid">
+                <!-- Voice & Tone -->
+                <div class="settings-card">
+                    <h3><i class="fas fa-microphone"></i> Voice Settings</h3>
+                    <div class="form-group">
+                        <label>AI Voice & Accent</label>
+                        <select name="ai_voice">
+                            <option value="Female - American" {% if user.ai_voice == 'Female - American' %}selected{% endif %}>Female - American</option>
+                            <option value="Male - American" {% if user.ai_voice == 'Male - American' %}selected{% endif %}>Male - American</option>
+                            <option value="Female - British" {% if user.ai_voice == 'Female - British' %}selected{% endif %}>Female - British</option>
+                            <option value="Male - British" {% if user.ai_voice == 'Male - British' %}selected{% endif %}>Male - British</option>
+                            <option value="Female - Indian" {% if user.ai_voice == 'Female - Indian' %}selected{% endif %}>Female - Indian</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>AI Personality</label>
+                        <select name="ai_personality">
+                            <option value="Friendly Teacher" {% if user.ai_personality == 'Friendly Teacher' %}selected{% endif %}>Friendly Teacher</option>
+                            <option value="Strict Teacher" {% if user.ai_personality == 'Strict Teacher' %}selected{% endif %}>Strict Teacher</option>
+                            <option value="HR Interviewer" {% if user.ai_personality == 'HR Interviewer' %}selected{% endif %}>HR Interviewer</option>
+                            <option value="Motivational Coach" {% if user.ai_personality == 'Motivational Coach' %}selected{% endif %}>Motivational Coach</option>
+                            <option value="Funny Assistant" {% if user.ai_personality == 'Funny Assistant' %}selected{% endif %}>Funny Assistant</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- AI Intelligence -->
+                <div class="settings-card">
+                    <h3><i class="fas fa-brain"></i> AI Intelligence</h3>
+                    <div class="form-group">
+                        <label>Difficulty Mode</label>
+                        <select name="ai_difficulty">
+                            <option value="Beginner" {% if user.ai_difficulty == 'Beginner' %}selected{% endif %}>Beginner (Easy English)</option>
+                            <option value="Intermediate" {% if user.ai_difficulty == 'Intermediate' %}selected{% endif %}>Intermediate (Moderate)</option>
+                            <option value="Advanced" {% if user.ai_difficulty == 'Advanced' %}selected{% endif %}>Advanced (Native Speed)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Speaking Speed: <span id="speedVal">{{ user.speaking_speed }}</span>x</label>
+                        <input type="range" name="speaking_speed" min="0.5" max="2.0" step="0.1" value="{{ user.speaking_speed }}" oninput="document.getElementById('speedVal').innerText = this.value">
+                    </div>
+                </div>
+
+                <!-- Appearance & Language -->
+                <div class="settings-card">
+                    <h3><i class="fas fa-paint-brush"></i> Personalization</h3>
+                    <div class="form-group">
+                        <label>Theme Customization</label>
+                        <select name="app_theme">
+                            <option value="Dark Neon" {% if user.app_theme == 'Dark Neon' %}selected{% endif %}>Dark Neon</option>
+                            <option value="Cyber Blue" {% if user.app_theme == 'Cyber Blue' %}selected{% endif %}>Cyber Blue</option>
+                            <option value="Purple AI" {% if user.app_theme == 'Purple AI' %}selected{% endif %}>Purple AI</option>
+                            <option value="Glassmorphism" {% if user.app_theme == 'Glassmorphism' %}selected{% endif %}>Glassmorphism</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>System Language</label>
+                        <select name="preferred_language">
+                            <option value="English" {% if user.preferred_language == 'English' %}selected{% endif %}>English</option>
+                            <option value="Telugu" {% if user.preferred_language == 'Telugu' %}selected{% endif %}>Telugu</option>
+                            <option value="Hindi" {% if user.preferred_language == 'Hindi' %}selected{% endif %}>Hindi</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Notifications & Privacy -->
+                <div class="settings-card">
+                    <h3><i class="fas fa-shield-alt"></i> Privacy & Alerts</h3>
+                    <div class="toggle-group">
+                        <label>Enable Notifications</label>
+                        <label class="switch">
+                            <input type="checkbox" name="notifications" {% if user.notifications_enabled %}checked{% endif %}>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-group">
+                        <label>Public Profile Visibility</label>
+                        <label class="switch">
+                            <input type="checkbox" name="privacy" {% if user.privacy_visible %}checked{% endif %}>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-save">Save Settings</button>
+        </form>
+
+        <hr style="margin: 4rem 0; border: none; border-top: 1px solid var(--glass-border);">
+
+        <div class="feedback-section">
+            <h2 style="margin-bottom: 2rem;"><i class="fas fa-headset"></i> Help & Feedback</h2>
+            <div class="settings-card" style="max-width: 600px;">
+                <form action="{% url 'dashboard:user_feedback' %}" method="POST">
+                    {% csrf_token %}
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label>Category</label>
+                        <select name="category" required>
+                            <option value="BUG">Report a Bug</option>
+                            <option value="SUGGESTION">Suggestion</option>
+                            <option value="COMPLAINT">Complaint</option>
+                            <option value="OTHER">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label>Subject</label>
+                        <input type="text" name="subject" placeholder="What is this about?" required style="background: var(--bg-dark); border: 1px solid var(--glass-border); color: white; padding: 0.8rem; border-radius: 10px;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label>Message / Details</label>
+                        <textarea name="message" rows="4" placeholder="Describe your issue or suggestion here..." required style="background: var(--bg-dark); border: 1px solid var(--glass-border); color: white; padding: 0.8rem; border-radius: 10px; outline: none;"></textarea>
+                    </div>
+                    <button type="submit" class="btn-save" style="width: 100%; margin-top: 0;">Submit Feedback</button>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .admin-container {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        min-height: calc(100vh - 80px);
+        margin-top: 80px;
+    }
+
+    .sidebar { background: #0f172a; border-right: 1px solid rgba(255,255,255,0.05); padding: 2rem; }
+    .main-content { padding: 3rem; background: #020617; }
+
+    .menu-item {
+        display: flex;
+        align-items: center; gap: 1rem; padding: 1rem 1.5rem; border-radius: 12px;
+        color: #94a3b8; text-decoration: none; transition: 0.3s;
+    }
+
+    .menu-item:hover, .menu-item.active { background: rgba(99, 102, 241, 0.1); color: white; }
+
+    .builder-card {
+        background: #1e293b;
+        border-radius: 24px;
+        padding: 3rem;
+        border: 1px solid rgba(255,255,255,0.05);
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .form-group { margin-bottom: 2rem; }
+    .form-group label { display: block; color: #94a3b8; margin-bottom: 0.8rem; font-weight: 600; }
+    .form-group input, .form-group select {
+        width: 100%;
+        background: #0f172a;
+        border: 1px solid rgba(255,255,255,0.05);
+        padding: 1.2rem;
+        border-radius: 12px;
+        color: white;
+        font-size: 1rem;
+    }
+
+    .btn-generate {
+        background: linear-gradient(135deg, #6366f1, #a855f7);
+        color: white;
+        width: 100%;
+        padding: 1.2rem;
+        border-radius: 12px;
+        border: none;
+        font-weight: 800;
+        font-size: 1.1rem;
+        cursor: pointer;
+        display: flex; align-items: center; justify-content: center; gap: 1rem;
+        transition: 0.3s;
+    }
+
+    .btn-generate:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <aside class="sidebar">
+        <h2 style="color: white; margin-bottom: 2rem; font-size: 1.2rem;">ADMIN PANEL 🔥</h2>
+        <nav class="sidebar-menu">
+            <a href="{% url 'dashboard:admin_panel' %}" class="menu-item">
+                <i class="fas fa-chart-pie"></i> Overview
+            </a>
+            <a href="{% url 'dashboard:admin_content' %}" class="menu-item active">
+                <i class="fas fa-book"></i> Content Manager
+            </a>
+            <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.05); margin: 1.5rem 0;">
+            <a href="{% url 'dashboard:admin_content' %}" class="menu-item">
+                <i class="fas fa-arrow-left"></i> Back to Levels
+            </a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <div class="header" style="text-align: center; margin-bottom: 3rem;">
+            <h1 style="color: white;">AI Lesson Builder 🪄</h1>
+            <p style="color: #94a3b8;">Enter a topic and AI will build a complete educational module for you.</p>
+        </div>
+
+        <div class="builder-card">
+            <form method="POST">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label>Topic Name</label>
+                    <input type="text" name="topic" placeholder="e.g., Present Perfect Continuous Tense" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Target Level</label>
+                    <select name="level_id" required>
+                        {% for level in levels %}
+                        <option value="{{ level.id }}">Level {{ level.number }}: {{ level.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Language Support</label>
+                    <select name="lang">
+                        <option value="telugu">English + Telugu Explanations</option>
+                        <option value="hindi">English + Hindi Explanations</option>
+                        <option value="english">English Only</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-generate">
+                    <i class="fas fa-magic"></i> Generate Complete Module
+                </button>
+            </form>
+            
+            <div style="margin-top: 2rem; padding: 1.5rem; background: rgba(99, 102, 241, 0.05); border-radius: 12px; border: 1px dashed rgba(99, 102, 241, 0.3);">
+                <p style="color: #6366f1; font-size: 0.85rem; text-align: center;">
+                    <i class="fas fa-info-circle"></i> AI will automatically create Theory, 50 Examples, 20 Fill Blanks, and 10 Speaking Tasks.
+                </p>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

@@ -1,0 +1,377 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<!-- Icons and Computer Vision scripts -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils"></script>
+
+<style>
+    .interview-session {
+        padding: 100px 2rem 4rem;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .question-card {
+        background: var(--bg-card);
+        padding: 3rem;
+        border-radius: 32px;
+        border: 1px solid var(--glass-border);
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .question-number {
+        font-size: 0.9rem;
+        color: var(--primary);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 1.5rem;
+        display: block;
+    }
+
+    .question-text {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 3rem;
+    }
+
+    .recording-area {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2rem;
+    }
+
+    .record-btn {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: rgba(244, 63, 94, 0.1);
+        color: var(--accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        cursor: pointer;
+        transition: var(--transition);
+        border: 2px solid var(--accent);
+    }
+
+    .record-btn.active {
+        background: var(--accent);
+        color: white;
+        box-shadow: 0 0 30px rgba(244, 63, 94, 0.4);
+        transform: scale(1.1);
+    }
+
+    .session-progress {
+        display: flex;
+        gap: 0.3rem;
+        justify-content: center;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .progress-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--glass-border);
+    }
+
+    .progress-dot.active {
+        background: var(--primary);
+    }
+
+    .progress-dot.completed {
+        background: var(--secondary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="interview-session" style="max-width: 1200px;">
+    <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 2rem;">
+        <!-- Left: Video Call Area -->
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <!-- AI Avatar (Interviewer) -->
+            <div id="ai-interviewer" style="height: 400px; background: #000; border-radius: 24px; position: relative; overflow: hidden; border: 2px solid var(--primary);">
+                <div style="position: absolute; bottom: 20px; left: 20px; background: rgba(0,0,0,0.6); padding: 0.5rem 1rem; border-radius: 10px; color: white; font-weight: 700;">
+                    <i class="fas fa-user-tie" style="color: var(--primary);"></i> AI HR Manager
+                </div>
+                <!-- Placeholder for Avatar Video/Canvas -->
+                <div id="avatar-container" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(45deg, #1e1b4b, #312e81);">
+                    <i class="fas fa-robot" style="font-size: 5rem; color: rgba(255,255,255,0.2); animation: pulse 2s infinite;"></i>
+                </div>
+            </div>
+
+            <!-- User Camera (Self View) -->
+            <div id="user-camera" style="height: 250px; background: #111; border-radius: 24px; position: relative; overflow: hidden; border: 1px solid var(--glass-border);">
+                <video id="webcam-feed" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+                <canvas id="face-mesh-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></canvas>
+                <div style="position: absolute; top: 15px; left: 15px; display: flex; gap: 10px;">
+                    <span id="eye-contact-badge" style="background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; border: 1px solid #10b981;">
+                        <i class="fas fa-eye"></i> Eye Contact: Good
+                    </span>
+                    <span id="posture-badge" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; border: 1px solid #f59e0b;">
+                        <i class="fas fa-user-check"></i> Posture: Slouching
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Content & Controls -->
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <div class="question-card" style="padding: 2rem; min-height: auto;">
+                <span class="question-number">Question <span id="current-q-num">1</span> of {{ questions|length }}</span>
+                <h2 class="question-text" id="q-text" style="font-size: 1.5rem; margin-bottom: 2rem;">{{ questions.0.question_text }}</h2>
+                
+                <div class="recording-area">
+                    <div class="record-btn" id="record-btn" style="width: 80px; height: 80px; font-size: 1.5rem;">
+                        <i class="fas fa-microphone"></i>
+                    </div>
+                    <p id="record-status" style="font-size: 0.9rem;">Click to answer</p>
+                </div>
+            </div>
+
+            <!-- Real-time Metrics -->
+            <div style="background: var(--bg-card); padding: 1.5rem; border-radius: 24px; border: 1px solid var(--glass-border);">
+                <h4 style="font-size: 0.9rem; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem;">Live Confidence Analysis</h4>
+                <div style="margin-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 5px;">
+                        <span>Speaking Confidence</span>
+                        <span id="conf-val">75%</span>
+                    </div>
+                    <div style="height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden;">
+                        <div id="conf-bar" style="width: 75%; height: 100%; background: linear-gradient(90deg, #6366f1, #a855f7); transition: width 0.3s;"></div>
+                    </div>
+                </div>
+                <div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 5px;">
+                        <span>Stress Level</span>
+                        <span id="stress-val">Normal</span>
+                    </div>
+                    <div style="height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden;">
+                        <div id="stress-bar" style="width: 20%; height: 100%; background: #10b981; transition: width 0.3s;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="feedback-area" style="display: none; padding: 1.5rem; background: var(--bg-dark); border-radius: 20px;">
+                <h4 style="color: var(--primary); font-size: 1rem; margin-bottom: 0.8rem;"><i class="fas fa-magic"></i> AI Feedback</h4>
+                <p id="ai-feedback-text" style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.5;"></p>
+                <button class="btn btn-primary" id="next-btn" style="margin-top: 1.5rem; width: 100%; padding: 0.8rem;">Next Question</button>
+            </div>
+
+            <div class="session-progress" style="margin-top: auto;">
+                {% for q in questions %}
+                    <div class="progress-dot {% if forloop.first %}active{% endif %}"></div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- GLOBAL VARIABLES ---
+    let currentIdx = 0;
+    const questions = [
+        {% for q in questions %}
+            { id: {{ q.id }}, text: "{{ q.question_text|escapejs }}" },
+        {% endfor %}
+    ];
+
+    const recordBtn = document.getElementById('record-btn');
+    const recordStatus = document.getElementById('record-status');
+    const feedbackArea = document.getElementById('feedback-area');
+    const nextBtn = document.getElementById('next-btn');
+    const qText = document.getElementById('q-text');
+    const qNum = document.getElementById('current-q-num');
+    const dots = document.querySelectorAll('.progress-dot');
+    const webcamVideo = document.getElementById('webcam-feed');
+    const canvasElement = document.getElementById('face-mesh-overlay');
+    const canvasCtx = canvasElement.getContext('2d');
+    const eyeBadge = document.getElementById('eye-contact-badge');
+    const postureBadge = document.getElementById('posture-badge');
+
+    let isRecording = false;
+    let mediaRecorder;
+    let chunks = [];
+    let globalStream;
+
+    // --- AI HR Voice ---
+    function speak(text) {
+        window.speechSynthesis.cancel(); // Stop any current speech
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.9;
+        utterance.pitch = 1.0;
+        window.speechSynthesis.speak(utterance);
+    }
+
+    // --- MediaPipe Body Language Analysis ---
+    const faceMesh = new FaceMesh({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`});
+    faceMesh.setOptions({ maxNumFaces: 1, refineLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+    
+    const pose = new Pose({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`});
+    pose.setOptions({ modelComplexity: 1, smoothLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+
+    const emotionBadge = document.createElement('span');
+    emotionBadge.id = 'emotion-badge';
+    emotionBadge.style = 'background: rgba(99, 102, 241, 0.2); color: #6366f1; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; border: 1px solid #6366f1;';
+    emotionBadge.innerHTML = '<i class="fas fa-smile"></i> Emotion: Neutral';
+    document.querySelector('#user-camera div').appendChild(emotionBadge);
+
+    faceMesh.onResults((results) => {
+        if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+            const landmarks = results.multiFaceLandmarks[0];
+            
+            // 1. Eye Contact
+            const leftEye = landmarks[468]; 
+            const isLookingAtCamera = (leftEye.x > 0.4 && leftEye.x < 0.6);
+            eyeBadge.innerHTML = isLookingAtCamera ? '<i class="fas fa-eye"></i> Eye Contact: Good' : '<i class="fas fa-eye-slash"></i> Look at Camera';
+            eyeBadge.style.borderColor = isLookingAtCamera ? '#10b981' : '#ef4444';
+            eyeBadge.style.color = isLookingAtCamera ? '#10b981' : '#ef4444';
+
+            // 2. Emotion/Smile
+            const mouthTop = landmarks[13].y;
+            const mouthBottom = landmarks[14].y;
+            const mouthLeft = landmarks[61].x;
+            const mouthRight = landmarks[291].x;
+            const smileRatio = (mouthRight - mouthLeft) / (mouthBottom - mouthTop);
+            
+            let emotion = "Neutral";
+            if (smileRatio > 4.5) emotion = "Smiling";
+            else if (smileRatio < 2.5) emotion = "Stressed/Open";
+
+            emotionBadge.innerHTML = `<i class="fas fa-smile"></i> Emotion: ${emotion}`;
+            emotionBadge.style.borderColor = emotion === "Smiling" ? '#10b981' : (emotion === "Neutral" ? '#6366f1' : '#f59e0b');
+        }
+    });
+
+    pose.onResults((results) => {
+        if (results.poseLandmarks) {
+            const leftShoulder = results.poseLandmarks[11];
+            const rightShoulder = results.poseLandmarks[12];
+            const shoulderDiff = Math.abs(leftShoulder.y - rightShoulder.y);
+            const isStraight = shoulderDiff < 0.05;
+            
+            postureBadge.innerHTML = isStraight ? '<i class="fas fa-user-check"></i> Posture: Good' : '<i class="fas fa-user-times"></i> Sit Straight';
+            postureBadge.style.borderColor = isStraight ? '#10b981' : '#f59e0b';
+            postureBadge.style.color = isStraight ? '#10b981' : '#f59e0b';
+        }
+    });
+
+    // --- Initialization ---
+    async function initSession() {
+        recordStatus.innerText = "Initializing AI HR...";
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            webcamVideo.srcObject = stream;
+            globalStream = stream;
+            
+            const camera = new Camera(webcamVideo, {
+                onFrame: async () => {
+                    await faceMesh.send({image: webcamVideo});
+                    await pose.send({image: webcamVideo});
+                },
+                width: 640, height: 480
+            });
+            camera.start();
+
+            recordStatus.innerText = "AI HR Ready. Listening...";
+            speak(`Hello! I am your AI HR Manager. Let's begin the interview for the ${ "{{ session.position|escapejs }}" } role. Here is your first question: ${questions[0].text}`);
+        } catch (e) {
+            console.error(e);
+            recordStatus.innerText = "Error: Camera/Mic blocked. Please allow permissions.";
+            recordStatus.style.color = "#ef4444";
+        }
+    }
+
+    initSession();
+
+    // --- Recording Logic ---
+    recordBtn.addEventListener('click', async () => {
+        if (!isRecording) {
+            if (!globalStream) await initSession();
+            mediaRecorder = new MediaRecorder(globalStream);
+            chunks = [];
+            mediaRecorder.ondataavailable = e => chunks.push(e.data);
+            mediaRecorder.onstop = () => analyzeAnswer(new Blob(chunks, { type: 'audio/wav' }));
+            
+            mediaRecorder.start();
+            isRecording = true;
+            recordBtn.classList.add('active');
+            recordStatus.innerText = "Recording... Click to stop";
+        } else {
+            mediaRecorder.stop();
+            isRecording = false;
+            recordBtn.classList.remove('active');
+            recordStatus.innerText = "Analyzing...";
+        }
+    });
+
+    async function analyzeAnswer(blob) {
+        feedbackArea.style.display = 'none';
+        recordStatus.style.display = 'block';
+        recordStatus.innerText = "AI is evaluating your response...";
+        recordBtn.style.display = 'none';
+
+        const formData = new FormData();
+        formData.append('audio', blob, 'answer.wav');
+        formData.append('question_id', questions[currentIdx].id);
+
+        try {
+            const res = await fetch(`{% url 'interview:evaluate_answer' session.pk %}`, { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+
+            feedbackArea.style.display = 'block';
+            recordStatus.style.display = 'none';
+            document.getElementById('ai-feedback-text').innerText = data.feedback;
+            document.getElementById('conf-val').innerText = data.conf_score + "%";
+            document.getElementById('conf-bar').style.width = data.conf_score + "%";
+            
+            // AI Speaks Feedback Reply
+            if (data.reply) speak(data.reply);
+            
+            const stressVal = data.conf_score > 80 ? 'Low' : (data.conf_score > 60 ? 'Normal' : 'High');
+            document.getElementById('stress-val').innerText = stressVal;
+            document.getElementById('stress-bar').style.width = (100 - data.conf_score) + "%";
+        } catch (e) {
+            console.error(e);
+            recordStatus.innerText = "Analysis failed. Please try again.";
+            recordBtn.style.display = 'flex';
+        }
+    }
+
+    nextBtn.addEventListener('click', () => {
+        dots[currentIdx].classList.remove('active');
+        dots[currentIdx].classList.add('completed');
+        currentIdx++;
+        
+        if (currentIdx < questions.length) {
+            qText.innerText = questions[currentIdx].text;
+            qNum.innerText = currentIdx + 1;
+            dots[currentIdx].classList.add('active');
+            feedbackArea.style.display = 'none';
+            recordBtn.style.display = 'flex';
+            recordStatus.style.display = 'block';
+            recordStatus.innerText = "Click to answer";
+            speak(`Next question: ${questions[currentIdx].text}`);
+        } else {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.innerHTML = `{% csrf_token %}`;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,285 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .pron-container {
+        padding: 100px 2rem 4rem;
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    .hero-section {
+        text-align: center;
+        margin-bottom: 4rem;
+    }
+
+    .hero-section h1 {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        background: linear-gradient(to right, #fff, #6366f1);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .analysis-card {
+        background: var(--bg-card);
+        border-radius: 32px;
+        border: 1px solid var(--glass-border);
+        padding: 3rem;
+        text-align: center;
+        backdrop-filter: blur(20px);
+    }
+
+    .mic-button {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: var(--primary);
+        border: none;
+        color: white;
+        font-size: 3rem;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        margin-bottom: 2rem;
+        box-shadow: 0 0 30px rgba(99, 102, 241, 0.4);
+        position: relative;
+    }
+
+    .mic-button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 50px rgba(99, 102, 241, 0.6);
+    }
+
+    .mic-button.recording {
+        background: #ef4444;
+        animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+        70% { transform: scale(1.1); box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+        margin-top: 3rem;
+        display: none;
+    }
+
+    .stat-card {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 1.5rem;
+        border-radius: 20px;
+        border: 1px solid var(--glass-border);
+    }
+
+    .stat-card h4 {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: white;
+    }
+
+    .percentage {
+        font-size: 1rem;
+        color: var(--primary);
+        margin-left: 0.2rem;
+    }
+
+    .pill-btn {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--glass-border);
+        color: var(--text-muted);
+        padding: 0.5rem 1.2rem;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.85rem;
+    }
+
+    .pill-btn.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    }
+
+    .loading-overlay {
+        display: none;
+        margin-top: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pron-container">
+    <div class="hero-section">
+        <h1>Perfect Your Accent</h1>
+        <p class="text-muted">Speak the sentence below and get instant AI feedback on your pronunciation and fluency.</p>
+    </div>
+
+    <div class="analysis-card">
+        <div style="display: flex; justify-content: center; gap: 1rem; margin-bottom: 2rem;">
+            <span id="level-badge" style="background: var(--primary); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">Beginner</span>
+            <div class="category-pills" style="display: flex; gap: 0.5rem;">
+                <button onclick="changeCategory('Daily')" class="pill-btn active">Daily</button>
+                <button onclick="changeCategory('Business')" class="pill-btn">Business</button>
+                <button onclick="changeCategory('Advanced')" class="pill-btn">Advanced</button>
+            </div>
+        </div>
+
+        <h2 id="practice-text" style="margin-bottom: 2rem; font-weight: 400; opacity: 0.9; min-height: 80px; display: flex; align-items: center; justify-content: center;">"The quick brown fox jumps over the lazy dog."</h2>
+        
+        <button class="mic-button" id="mic-btn">
+            <i class="fas fa-microphone"></i>
+        </button>
+        
+        <p id="status-text" class="text-muted">Click the microphone to start practicing</p>
+
+        <div class="loading-overlay" id="loader">
+            <i class="fas fa-circle-notch fa-spin fa-2x text-primary"></i>
+            <p class="mt-2">AI is analyzing your voice...</p>
+        </div>
+
+        <div class="stats-grid" id="results">
+            <div class="stat-card">
+                <h4>Pronunciation</h4>
+                <div class="stat-value" id="pron-score">0<span class="percentage">%</span></div>
+            </div>
+            <div class="stat-card">
+                <h4>Fluency</h4>
+                <div class="stat-value" id="fluency-score">0<span class="percentage">%</span></div>
+            </div>
+            <div class="stat-card">
+                <h4>Overall</h4>
+                <div class="stat-value" id="overall-score">0<span class="percentage">%</span></div>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem;">
+            <button class="btn btn-outline" id="prev-btn" onclick="prevSentence()"><i class="fas fa-arrow-left"></i> Previous</button>
+            <button class="btn btn-primary" id="retry-btn" onclick="nextSentence()">Next Sentence <i class="fas fa-arrow-right"></i></button>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/sentences.js' %}"></script>
+<script>
+    let mediaRecorder;
+    let audioChunks = [];
+    const micBtn = document.getElementById('mic-btn');
+    const statusText = document.getElementById('status-text');
+    const results = document.getElementById('results');
+    const loader = document.getElementById('loader');
+    const levelBadge = document.getElementById('level-badge');
+    const practiceText = document.getElementById('practice-text');
+
+    // contentLibrary is now loaded from static/js/sentences.js
+    let currentCategory = 'Daily';
+    let currentIndex = 0;
+
+    function updateDisplay() {
+        const item = contentLibrary[currentCategory][currentIndex];
+        practiceText.innerText = `"${item.text}"`;
+        levelBadge.innerText = item.level;
+        results.style.display = 'none';
+        micBtn.classList.remove('recording');
+        statusText.innerText = "Click the microphone to start practicing";
+    }
+
+    function changeCategory(cat) {
+        currentCategory = cat;
+        currentIndex = 0;
+        document.querySelectorAll('.pill-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.innerText === cat);
+        });
+        updateDisplay();
+    }
+
+    function nextSentence() {
+        currentIndex = (currentIndex + 1) % contentLibrary[currentCategory].length;
+        updateDisplay();
+    }
+
+    function prevSentence() {
+        currentIndex = (currentIndex - 1 + contentLibrary[currentCategory].length) % contentLibrary[currentCategory].length;
+        updateDisplay();
+    }
+
+    micBtn.onclick = async () => {
+        if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    const formData = new FormData();
+                    formData.append('audio', audioBlob, 'recording.wav');
+                    formData.append('target_text', document.getElementById('practice-text').innerText);
+
+                    loader.style.display = 'block';
+                    statusText.style.display = 'none';
+                    results.style.display = 'none';
+
+                    try {
+                        const response = await fetch('{% url "pronunciation:analyze" %}', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const data = await response.json();
+                        
+                        loader.style.display = 'none';
+
+                        if (data.error) {
+                            statusText.innerText = "Error: " + data.error;
+                            statusText.style.display = 'block';
+                            return;
+                        }
+
+                        results.style.display = 'grid';
+                        document.getElementById('retry-btn').style.display = 'inline-block';
+
+                        document.getElementById('pron-score').innerHTML = `${data.pronunciation}<span class="percentage">%</span>`;
+                        document.getElementById('fluency-score').innerHTML = `${data.fluency}<span class="percentage">%</span>`;
+                        document.getElementById('overall-score').innerHTML = `${Math.round((data.pronunciation + data.fluency)/2)}<span class="percentage">%</span>`;
+                        
+                        statusText.innerHTML = `AI heard: <span style="color: white; font-style: italic;">"${data.transcription}"</span>`;
+                        statusText.style.display = 'block';
+                    } catch (error) {
+                        console.error('Error:', error);
+                        statusText.innerText = "Error analyzing audio. Make sure the server is running.";
+                        statusText.style.display = 'block';
+                        loader.style.display = 'none';
+                    }
+                };
+
+                mediaRecorder.start();
+                micBtn.classList.add('recording');
+                statusText.innerText = "Recording... Speak now!";
+            } catch (err) {
+                console.error("Mic access denied:", err);
+                statusText.innerText = "Microphone access denied.";
+            }
+        } else {
+            mediaRecorder.stop();
+            micBtn.classList.remove('recording');
+            statusText.innerText = "Processing...";
+        }
+    };
+</script>
+{% endblock %}

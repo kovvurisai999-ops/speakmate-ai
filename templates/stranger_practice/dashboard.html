@@ -1,0 +1,590 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --accent-primary: #6366f1;
+        --accent-secondary: #a855f7;
+        --glass-white: rgba(255, 255, 255, 0.05);
+        --glass-border: rgba(255, 255, 255, 0.1);
+    }
+
+    body {
+        background: #0a0b14;
+        color: #ffffff;
+        font-family: 'Outfit', sans-serif;
+        overflow-x: hidden;
+    }
+
+    .stranger-page {
+        padding-top: 100px;
+        min-height: 100vh;
+        background: radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.05) 0%, transparent 50%),
+                    radial-gradient(circle at 100% 100%, rgba(168, 85, 247, 0.05) 0%, transparent 50%);
+    }
+
+    /* Fixed Top Control Bar */
+    .control-header {
+        position: fixed;
+        top: 80px;
+        left: 0;
+        right: 0;
+        padding: 1rem 2rem;
+        background: rgba(10, 11, 20, 0.8);
+        backdrop-filter: blur(10px);
+        z-index: 1000;
+        border-bottom: 1px solid var(--glass-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .timer-pill {
+        background: rgba(99, 102, 241, 0.15);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        padding: 0.5rem 1.5rem;
+        border-radius: 99px;
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 700;
+        color: var(--accent-primary);
+        font-size: 1.25rem;
+    }
+
+    /* Main Grid */
+    .session-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .main-stage {
+        background: var(--glass-white);
+        border: 1px solid var(--glass-border);
+        border-radius: 2.5rem;
+        padding: 3rem;
+        box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Topic Section */
+    .topic-card {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 1.5rem;
+        padding: 2rem;
+        margin-bottom: 3rem;
+        text-align: center;
+        position: relative;
+    }
+
+    .topic-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: var(--accent-primary);
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Speaker Avatars */
+    .speakers-row {
+        display: flex;
+        justify-content: center;
+        gap: 4rem;
+        margin-bottom: 4rem;
+    }
+
+    .speaker-box {
+        text-align: center;
+    }
+
+    .avatar-circle {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        background: var(--glass-white);
+        border: 2px solid var(--glass-border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+        position: relative;
+        transition: all 0.5s ease;
+    }
+
+    .avatar-circle i {
+        font-size: 3rem;
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    .avatar-circle.active {
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 30px rgba(99, 102, 241, 0.4);
+        background: rgba(99, 102, 241, 0.1);
+    }
+
+    .avatar-circle.active i {
+        color: var(--accent-primary);
+    }
+
+    /* Subtitles Card */
+    .subtitles-card {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 1.5rem;
+        padding: 2rem;
+        border: 1px solid var(--glass-border);
+        min-height: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+
+    #live-subtitles {
+        font-size: 1.5rem;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.8);
+        line-height: 1.4;
+    }
+
+    /* Coach Sidebar */
+    .coach-panel {
+        background: var(--glass-white);
+        border: 1px solid var(--glass-border);
+        border-radius: 2rem;
+        padding: 2rem;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .feedback-item {
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 1.25rem;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #6366f1;
+        animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateX(20px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* Buttons */
+    .btn-premium {
+        background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+        border: none;
+        padding: 1rem 2.5rem;
+        border-radius: 1rem;
+        font-weight: 700;
+        color: white;
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-premium:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 15px 30px -5px rgba(99, 102, 241, 0.5);
+    }
+
+    .btn-secondary-glass {
+        background: var(--glass-white);
+        border: 1px solid var(--glass-border);
+        color: white;
+        padding: 0.8rem 2rem;
+        border-radius: 1rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-secondary-glass:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+
+    /* Idle Card */
+    .hero-card {
+        max-width: 700px;
+        margin: 100px auto;
+        padding: 4rem;
+        background: var(--glass-white);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 3rem;
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="stranger-page">
+    
+    <!-- IDLE STATE -->
+    <div id="idle-state" class="hero-card">
+        <div class="display-1 mb-4">🌍</div>
+        <h1 class="fw-bold mb-3" style="font-size: 3rem;">Ready to Speak?</h1>
+        <p class="text-white-50 fs-5 mb-5">Connect with English learners worldwide and practice in real-time with an AI Coach.</p>
+        <div class="d-grid gap-3">
+            <button class="btn btn-premium btn-lg" onclick="startSearch()">
+                <i class="fas fa-bolt me-2"></i> Find a Partner
+            </button>
+            <button class="btn btn-secondary-glass" onclick="startVirtualMatch()">
+                <i class="fas fa-robot me-2"></i> Practice with AI (Demo)
+            </button>
+        </div>
+    </div>
+
+    <!-- SEARCHING STATE -->
+    <div id="searching-state" class="hero-card" style="display: none;">
+        <div class="spinner-grow text-primary mb-4" style="width: 4rem; height: 4rem;" role="status"></div>
+        <h2 class="fw-bold mb-3">Finding your match...</h2>
+        <p class="text-white-50 mb-5">Hang tight, connecting you to another learner.</p>
+        <button class="btn btn-link text-danger text-decoration-none fw-bold" onclick="stopSearch()">
+            Stop Searching
+        </button>
+    </div>
+
+    <!-- ACTIVE SESSION -->
+    <div id="connected-state" class="session-container" style="display: none;">
+        
+        <!-- Top Navigation (Only shown during call) -->
+        <div class="control-header">
+            <div class="d-flex align-items-center">
+                <div class="badge bg-success rounded-pill me-3 px-3 py-2">
+                    <i class="fas fa-circle me-1 small"></i> Live
+                </div>
+                <div class="timer-pill" id="call-timer">00:00</div>
+            </div>
+            <button class="btn btn-danger rounded-pill px-4" onclick="endCall()">
+                <i class="fas fa-phone-slash me-2"></i> Leave Room
+            </button>
+        </div>
+
+        <div class="row g-4 mt-5">
+            <div class="col-lg-8">
+                <div class="main-stage">
+                    
+                    <!-- Topic -->
+                    <div class="topic-card">
+                        <div class="topic-label">Current Discussion Topic</div>
+                        <h3 id="current-topic" class="fw-bold mb-4 text-white">"What is your dream career and why?"</h3>
+                        <button class="btn btn-sm btn-outline-light rounded-pill px-4 opacity-50" onclick="generateNewTopic()">
+                            <i class="fas fa-random me-2"></i> Next Topic
+                        </button>
+                    </div>
+
+                    <!-- Avatars -->
+                    <div class="speakers-row">
+                        <div class="speaker-box">
+                            <div class="avatar-circle active" id="my-avatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <span class="fw-bold">You</span>
+                        </div>
+                        <div class="speaker-box">
+                            <div class="avatar-circle" id="partner-avatar">
+                                <i class="fas fa-user-friends"></i>
+                            </div>
+                            <span class="fw-bold text-white-50" id="partner-name">Partner</span>
+                        </div>
+                    </div>
+
+                    <!-- Subtitles -->
+                    <div class="subtitles-card">
+                        <div id="live-subtitles">Listening for voice...</div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="coach-panel">
+                    <h5 class="fw-bold mb-4 d-flex align-items-center">
+                        <span class="p-2 bg-primary bg-opacity-10 rounded-3 me-3">
+                            <i class="fas fa-robot text-primary"></i>
+                        </span>
+                        AI Live Coach
+                    </h5>
+                    <div id="ai-corrections" class="flex-grow-1 overflow-auto pe-2">
+                        <div class="text-center text-muted mt-5 py-5 opacity-25">
+                            <i class="fas fa-magic fa-3x mb-3"></i>
+                            <p class="small px-4">Speak clearly! Corrections will appear here in real-time.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SUCCESS MODAL -->
+<div class="modal fade" id="sessionEndModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content shadow-lg" style="background: #11121d; border: 1px solid var(--glass-border); border-radius: 3rem;">
+            <div class="modal-body p-5 text-center">
+                <div class="display-1 mb-4">🏆</div>
+                <h1 class="fw-bold text-white mb-2">Great Job!</h1>
+                <p class="text-white-50 mb-5">Session duration: <span id="final-duration" class="fw-bold text-white">00:00</span></p>
+
+                <div class="row g-4 mb-5">
+                    <div class="col-4">
+                        <div class="p-4 rounded-4 bg-white bg-opacity-5">
+                            <h4 class="fw-bold text-primary mb-1" id="final-fluency">0%</h4>
+                            <div class="small text-muted text-uppercase">Fluency</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-4 rounded-4 bg-white bg-opacity-5">
+                            <h4 class="fw-bold text-success mb-1" id="final-grammar">0%</h4>
+                            <div class="small text-muted text-uppercase">Grammar</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-4 rounded-4 bg-white bg-opacity-5">
+                            <h4 class="fw-bold text-warning mb-1" id="final-vocab">0%</h4>
+                            <div class="small text-muted text-uppercase">Vocab</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-4 bg-primary bg-opacity-10 border border-primary border-opacity-20 mb-5">
+                    <h5 class="fw-bold text-primary mb-0"><i class="fas fa-star me-2"></i> +50 Experience Points Earned!</h5>
+                </div>
+
+                <button class="btn btn-premium w-100 py-3 rounded-4" onclick="location.reload()">
+                    Finish & Exit
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+<script>
+    let chatSocket = null;
+    let peer = null;
+    let localStream = null;
+    let currentRoom = null;
+    let startTime = null;
+    let timerInterval = null;
+
+    // Real Performance Tracking
+    let totalSentences = 0;
+    let grammarErrors = 0;
+    let totalWords = 0;
+    let uniqueWords = new Set();
+
+    const topics = [
+        "What is your dream job and why?",
+        "Tell about a place you want to travel to.",
+        "What is your favorite food from your hometown?",
+        "If you could have any superpower, what would it be?",
+        "What was the most interesting thing that happened to you this week?",
+        "How do you usually spend your weekends?",
+        "Tell your partner about your favorite movie.",
+        "What are your hobbies besides learning English?"
+    ];
+
+    function generateNewTopic() {
+        const randomTopic = topics[Math.floor(Math.random() * topics.length)];
+        document.getElementById('current-topic').innerText = `"${randomTopic}"`;
+    }
+
+    function startSearch() { connectToWS(); }
+    function startVirtualMatch() { connectToWS(true); }
+
+    function connectToWS(isVirtual = false) {
+        document.getElementById('idle-state').style.display = 'none';
+        document.getElementById('searching-state').style.display = 'block';
+
+        const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
+        chatSocket = new WebSocket(`${ws_scheme}://${window.location.host}/ws/matchmaking/`);
+
+        chatSocket.onopen = () => {
+            if (isVirtual) chatSocket.send(JSON.stringify({ "type": "virtual_match" }));
+        };
+
+        chatSocket.onmessage = (e) => {
+            const data = JSON.parse(e.data);
+            if (data.type === "match_found") {
+                currentRoom = data.room_id;
+                document.getElementById('partner-name').innerText = data.partner_name;
+                initCall(data.room_id, isVirtual);
+            } else if (data.type === "live_feedback") {
+                displayLiveFeedback(data);
+            }
+        };
+    }
+
+    function stopSearch() {
+        if (chatSocket) chatSocket.close();
+        document.getElementById('idle-state').style.display = 'block';
+        document.getElementById('searching-state').style.display = 'none';
+    }
+
+    async function initCall(roomId, isVirtual = false) {
+        document.getElementById('searching-state').style.display = 'none';
+        document.getElementById('connected-state').style.display = 'block';
+
+        startTime = Date.now();
+        timerInterval = setInterval(updateTimer, 1000);
+
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            startSpeechRecognition();
+        } catch (err) { console.error("Mic denied"); }
+
+        // WebRTC Configuration with Google STUN servers
+        const peerConfig = {
+            config: {
+                'iceServers': [
+                    { url: 'stun:stun.l.google.com:19302' },
+                    { url: 'stun:stun1.l.google.com:19302' },
+                ]
+            }
+        };
+
+        peer = new Peer(peerConfig);
+        peer.on('open', (id) => {
+            chatSocket.send(JSON.stringify({ "type": "signal", "room_id": roomId, "data": { "peer_id": id } }));
+        });
+
+        chatSocket.onmessage = (e) => {
+            const data = JSON.parse(e.data);
+            if (data.type === "webrtc_signal" && data.data.peer_id) connectToPartner(data.data.peer_id);
+            else if (data.type === "live_feedback") displayLiveFeedback(data);
+        };
+
+        peer.on('call', (call) => {
+            call.answer(localStream);
+            handleCall(call);
+        });
+    }
+
+    function updateTimer() {
+        const diff = Math.floor((Date.now() - startTime) / 1000);
+        const mins = Math.floor(diff / 60).toString().padStart(2, '0');
+        const secs = (diff % 60).toString().padStart(2, '0');
+        document.getElementById('call-timer').innerText = `${mins}:${secs}`;
+    }
+
+    function startSpeechRecognition() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) return;
+        const rec = new SpeechRecognition();
+        rec.continuous = true;
+        rec.interimResults = true;
+        rec.onresult = (event) => {
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                const text = event.results[i][0].transcript;
+                document.getElementById('live-subtitles').innerText = text;
+                if (event.results[i].isFinal) {
+                    totalSentences++;
+                    
+                    // Show 'Analyzing...' placeholder
+                    showAnalyzingPlaceholder(text);
+                    
+                    const words = text.trim().split(/\s+/);
+                    totalWords += words.length;
+                    words.forEach(w => uniqueWords.add(w.toLowerCase()));
+
+                    chatSocket.send(JSON.stringify({ "type": "speech_text", "room_id": currentRoom, "text": text }));
+                    // Pulse My Avatar
+                    document.getElementById('my-avatar').classList.add('active');
+                    setTimeout(() => document.getElementById('my-avatar').classList.remove('active'), 2000);
+                }
+            }
+        };
+        rec.start();
+    }
+
+    function showAnalyzingPlaceholder(text) {
+        const container = document.getElementById('ai-corrections');
+        if (container.querySelector('.text-center')) container.innerHTML = '';
+        
+        const div = document.createElement('div');
+        div.id = 'temp-analyzing';
+        div.className = 'feedback-item opacity-50';
+        div.style.borderLeftColor = '#6366f1';
+        div.innerHTML = `
+            <div class="small fw-bold mb-1">AI is thinking...</div>
+            <div class="small text-white-50 italic">"${text}"</div>
+        `;
+        container.prepend(div);
+    }
+
+    function displayLiveFeedback(data) {
+        const container = document.getElementById('ai-corrections');
+        
+        // Remove placeholder
+        const placeholder = document.getElementById('temp-analyzing');
+        if (placeholder) placeholder.remove();
+
+        if (container.querySelector('.text-center')) container.innerHTML = '';
+        
+        const div = document.createElement('div');
+        div.className = 'feedback-item';
+        const isV = data.feedback.is_valid;
+        if (!isV && data.sender_name === "You") {
+            grammarErrors++;
+        }
+        div.style.borderLeftColor = isV ? '#10b981' : '#ef4444';
+        
+        div.innerHTML = `
+            <div class="small fw-bold mb-1">${data.sender_name}</div>
+            <div class="small text-white-50 italic mb-2">"${data.original}"</div>
+            <div class="small fw-medium" style="color: ${isV ? '#10b981' : '#f87171'};">
+                ${data.feedback.feedback}
+            </div>
+        `;
+        container.prepend(div);
+        
+        // Pulse Partner Avatar if it's them
+        if (data.sender_name !== "You") {
+            document.getElementById('partner-avatar').classList.add('active');
+            setTimeout(() => document.getElementById('partner-avatar').classList.remove('active'), 2000);
+        }
+    }
+
+    function connectToPartner(pid) {
+        const call = peer.call(pid, localStream);
+        handleCall(call);
+    }
+
+    function handleCall(call) {
+        call.on('stream', (rs) => {
+            const audio = new Audio();
+            audio.srcObject = rs;
+            audio.play();
+        });
+    }
+
+    function endCall() {
+        clearInterval(timerInterval);
+        const durationSeconds = Math.floor((Date.now() - startTime) / 1000);
+        document.getElementById('final-duration').innerText = document.getElementById('call-timer').innerText;
+        
+        // --- REAL SCORING LOGIC ---
+        
+        // 1. Grammar Score: 100 - (errors / total sentences * 100)
+        let grammarScore = totalSentences > 0 ? Math.round(Math.max(0, 100 - (grammarErrors / totalSentences * 100))) : 0;
+        
+        // 2. Fluency Score: Based on Words Per Minute (WPM). Target is ~100-130 WPM for learners.
+        let wpm = durationSeconds > 0 ? (totalWords / (durationSeconds / 60)) : 0;
+        let fluencyScore = Math.min(100, Math.round((wpm / 110) * 100)); // Normalized to 110 WPM
+        if (totalSentences === 0) fluencyScore = 0;
+
+        // 3. Vocab Score: Based on Unique Words vs Total Words ratio and volume
+        let vocabScore = totalWords > 0 ? Math.min(100, Math.round((uniqueWords.size / totalWords) * 120)) : 0;
+        if (totalWords < 10) vocabScore = Math.min(vocabScore, 50); // Penalty for very short sessions
+
+        document.getElementById('final-fluency').innerText = fluencyScore + "%";
+        document.getElementById('final-grammar').innerText = grammarScore + "%";
+        document.getElementById('final-vocab').innerText = vocabScore + "%";
+        
+        new bootstrap.Modal(document.getElementById('sessionEndModal')).show();
+    }
+</script>
+{% endblock %}

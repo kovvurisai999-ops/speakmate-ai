@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .dashboard-container {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        min-height: calc(100vh - 80px);
+        margin-top: 80px;
+    }
+
+    .sidebar {
+        background: var(--bg-card);
+        border-right: 1px solid var(--glass-border);
+        padding: 2rem;
+    }
+
+    .sidebar-menu {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .menu-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        color: var(--text-muted);
+        font-weight: 500;
+        transition: var(--transition);
+    }
+
+    .menu-item:hover, .menu-item.active {
+        background: rgba(99, 102, 241, 0.1);
+        color: var(--primary);
+    }
+
+    .main-content {
+        padding: 3rem;
+        background: #0a0f1d;
+    }
+
+    .analytics-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2rem;
+        margin-bottom: 3rem;
+    }
+
+    .chart-card {
+        background: var(--bg-card);
+        padding: 2rem;
+        border-radius: 24px;
+        border: 1px solid var(--glass-border);
+    }
+
+    .mastery-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .mastery-item {
+        background: var(--bg-dark);
+        padding: 1rem;
+        border-radius: 12px;
+        border: 1px solid var(--glass-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .progress-bar-bg {
+        width: 100px;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .progress-bar-fill {
+        height: 100%;
+        background: var(--primary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <aside class="sidebar">
+        <div class="sidebar-menu">
+            <a href="{% url 'dashboard:index' %}" class="menu-item">
+                <i class="fas fa-th-large"></i> Overview
+            </a>
+            <a href="{% url 'avatar:teacher' %}" class="menu-item">
+                <i class="fas fa-graduation-cap"></i> AI Teacher
+            </a>
+            <a href="{% url 'chat:index' %}" class="menu-item">
+                <i class="fas fa-comments"></i> AI Chatbot
+            </a>
+            <a href="{% url 'pronunciation:index' %}" class="menu-item">
+                <i class="fas fa-bullhorn"></i> Pronunciation
+            </a>
+            <a href="{% url 'interview:list' %}" class="menu-item">
+                <i class="fas fa-user-tie"></i> Interview AI
+            </a>
+            <a href="{% url 'roadmap:index' %}" class="menu-item">
+                <i class="fas fa-map-signs"></i> Learning Roadmap
+            </a>
+            <a href="{% url 'dashboard:analytics' %}" class="menu-item active">
+                <i class="fas fa-chart-line"></i> Analytics
+            </a>
+            <a href="#" class="menu-item">
+                <i class="fas fa-cog"></i> Settings
+            </a>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <div class="welcome-header" style="margin-bottom: 3rem; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1>Learning Analytics 📊</h1>
+                <p style="color: var(--text-muted);">Track your progress and identify your strengths.</p>
+            </div>
+            <a href="{% url 'dashboard:index' %}" class="btn-save" style="text-decoration: none; padding: 0.8rem 1.5rem; background: var(--bg-card); border: 1px solid var(--glass-border); color: white;">
+                <i class="fas fa-arrow-left"></i> Back to Home
+            </a>
+        </div>
+
+        <div class="analytics-grid">
+            <div class="chart-card">
+                <h3 style="margin-bottom: 1.5rem;">Speaking Activity</h3>
+                <canvas id="activityChart" height="250"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3 style="margin-bottom: 1.5rem;">Grammar Accuracy</h3>
+                <canvas id="accuracyChart" height="250"></canvas>
+            </div>
+        </div>
+
+        <div class="dashboard-grid" style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+            <div class="chart-card">
+                <h3>Concept Mastery</h3>
+                <div class="mastery-list">
+                    {% for m in mastery_data %}
+                    <div class="mastery-item">
+                        <div>
+                            <h4 style="font-size: 0.95rem;">{{ m.concept.name }}</h4>
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">Level {{ m.concept.level.number }}</span>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 700; color: var(--primary);">{{ m.score }}%</div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" style="width: {{ m.score }}%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p style="color: var(--text-muted);">No lessons completed yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="chart-card" style="background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white;">
+                <h3>AI Feedback</h3>
+                <div style="margin-top: 1.5rem;">
+                    <p style="font-size: 0.9rem; opacity: 0.9; line-height: 1.6;">
+                        "You are showing great consistency in your learning! Your grammar accuracy has improved by 15% this week. Focus more on 'Conditionals' to further strengthen your advanced speaking skills."
+                    </p>
+                    <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+                        <div style="background: rgba(255,255,255,0.2); padding: 1rem; border-radius: 12px; flex: 1; text-align: center;">
+                            <div style="font-size: 1.2rem; font-weight: 700;">+15%</div>
+                            <div style="font-size: 0.7rem;">Weekly Growth</div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.2); padding: 1rem; border-radius: 12px; flex: 1; text-align: center;">
+                            <div style="font-size: 1.2rem; font-weight: 700;">Good</div>
+                            <div style="font-size: 0.7rem;">Fluency Status</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const days = {{ days|safe }};
+    const lessons = {{ lesson_counts|safe }};
+    const accuracy = {{ scores|safe }};
+
+    // Activity Chart
+    const ctx1 = document.getElementById('activityChart').getContext('2d');
+    new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels: days,
+            datasets: [{
+                label: 'Lessons Completed',
+                data: lessons,
+                backgroundColor: '#6366f1',
+                borderRadius: 8,
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { display: false } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // Accuracy Chart
+    const ctx2 = document.getElementById('accuracyChart').getContext('2d');
+    new Chart(ctx2, {
+        type: 'line',
+        data: {
+            labels: days,
+            datasets: [{
+                label: 'Grammar Score %',
+                data: accuracy,
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { min: 0, max: 100, grid: { color: 'rgba(255,255,255,0.05)' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+</script>
+{% endblock %}
