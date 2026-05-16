@@ -3,11 +3,6 @@
 import os
 import sys
 
-try:
-    import torch
-    print("Torch imported successfully in manage.py")
-except Exception as e:
-    print(f"Error importing torch in manage.py: {e}")
 
 def main():
     """Run administrative tasks."""
