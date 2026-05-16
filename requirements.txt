@@ -17,11 +17,8 @@ python-dotenv
 python-decouple
 google-generativeai
 openai
-openai-whisper
 librosa
 numpy==1.26.4
-pandas==2.0.3
-matplotlib
 pillow
 requests
 beautifulsoup4
@@ -37,14 +34,11 @@ werkzeug
 jinja2
 markupsafe
 itsdangerous
-flask
-flask-cors
 pydantic
 anyio
 sniffio
 h11
 starlette
-fastapi
 typing-extensions
 python-multipart
-# Add any other core packages but avoid torch/tensorflow if possible
+# Removed pandas, matplotlib, flask, fastapi as they are not used in the core app
