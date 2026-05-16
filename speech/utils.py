@@ -1,10 +1,7 @@
 import os
 from django.conf import settings
 
-# Explicitly add FFmpeg to PATH for Windows
-ffmpeg_path = r"C:\Users\hmind\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.1.1-full_build\bin"
-if ffmpeg_path not in os.environ["PATH"]:
-    os.environ["PATH"] += os.pathsep + ffmpeg_path
+# FFmpeg path handled by environment or system on Linux/Render
 
 class SpeechManager:
     _model = None

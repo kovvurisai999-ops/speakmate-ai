@@ -1,10 +1,11 @@
-import cv2
-from deepface import DeepFace
-import numpy as np
 import os
+# Heavy imports moved inside classes to prevent startup crashes
 
 class EmotionAnalyzer:
     def analyze_frame(self, frame):
+        import cv2
+        from deepface import DeepFace
+        import numpy as np
         try:
             # DeepFace.analyze returns a list of results
             results = DeepFace.analyze(frame, actions=['emotion'], enforce_detection=False)
@@ -32,6 +33,7 @@ class EmotionAnalyzer:
         return None
 
     def analyze_image_path(self, image_path):
+        import cv2
         img = cv2.imread(image_path)
         if img is not None:
             return self.analyze_frame(img)
