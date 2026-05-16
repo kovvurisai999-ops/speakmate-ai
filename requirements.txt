@@ -1,6 +1,10 @@
 setuptools
+wheel
 gunicorn
 whitenoise
+daphne
+channels
+channels_redis
 Django==5.2.14
 django-allauth
 django-cors-headers
@@ -9,9 +13,6 @@ crispy-bootstrap5
 djangorestframework
 django-filter
 django-debug-toolbar
-daphne
-channels
-channels_redis
 psutil
 python-dotenv
 python-decouple
@@ -41,4 +42,5 @@ h11
 starlette
 typing-extensions
 python-multipart
-# Removed pandas, matplotlib, flask, fastapi as they are not used in the core app
+# Essential for production
+# Removed pandas, matplotlib, flask, fastapi to save memory
