@@ -43,5 +43,6 @@ h11
 starlette
 typing-extensions
 python-multipart
+pyttsx3
 # Essential for production
 # Removed pandas, matplotlib, flask, fastapi to save memory
