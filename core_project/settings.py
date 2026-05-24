@@ -105,10 +105,17 @@ CHANNEL_LAYERS = {
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+# Production persistent storage support for SQLite on Render
+PERSISTENT_DISK_PATH = os.getenv('PERSISTENT_DISK_PATH', '')
+if PERSISTENT_DISK_PATH and os.path.exists(PERSISTENT_DISK_PATH):
+    DB_PATH = Path(PERSISTENT_DISK_PATH) / 'db.sqlite3'
+else:
+    DB_PATH = BASE_DIR / 'db.sqlite3'
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': DB_PATH,
     }
 }
 
