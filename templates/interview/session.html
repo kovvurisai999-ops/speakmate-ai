@@ -11,87 +11,155 @@
 
 <style>
     .interview-session {
-        padding: 100px 2rem 4rem;
-        max-width: 900px;
+        padding: 80px 2rem 4rem;
+        max-width: 1200px;
         margin: 0 auto;
     }
 
-    .question-card {
-        background: var(--bg-card);
-        padding: 3rem;
-        border-radius: 32px;
-        border: 1px solid var(--glass-border);
-        text-align: center;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .question-number {
-        font-size: 0.9rem;
-        color: var(--primary);
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        margin-bottom: 1.5rem;
-        display: block;
-    }
-
-    .question-text {
-        font-size: 2rem;
-        font-weight: 700;
-        margin-bottom: 3rem;
-    }
-
-    .recording-area {
+    /* Premium Avatar Styles */
+    #avatar-container {
+        width: 100%;
+        height: 100%;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 2rem;
+        justify-content: center;
+        background: radial-gradient(circle at center, #1e1b4b 0%, #020617 100%);
+        position: relative;
     }
 
-    .record-btn {
-        width: 100px;
-        height: 100px;
-        border-radius: 50%;
-        background: rgba(244, 63, 94, 0.1);
-        color: var(--accent);
+    .avatar-svg {
+        width: 280px;
+        height: 280px;
+        filter: drop-shadow(0 0 20px rgba(99, 102, 241, 0.3));
+    }
+
+    /* Blinking Animation */
+    @keyframes blink {
+        0%, 90%, 100% { transform: scaleY(1); }
+        95% { transform: scaleY(0.1); }
+    }
+
+    .eye-lid {
+        animation: blink 4s infinite;
+        transform-origin: center;
+    }
+
+    /* Breathing / Idle Animation */
+    @keyframes breathe {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+    }
+
+    .avatar-head {
+        animation: breathe 3s ease-in-out infinite;
+    }
+
+    /* Lip Sync / Speaking Animation */
+    @keyframes lipSync {
+        0%, 100% { height: 4px; y: 160px; }
+        50% { height: 12px; y: 156px; }
+    }
+
+    .mouth-speaking {
+        animation: lipSync 0.2s infinite;
+    }
+
+    /* Thinking / Brain Pulse */
+    @keyframes brainPulse {
+        0%, 100% { opacity: 0.3; filter: blur(2px); }
+        50% { opacity: 1; filter: blur(0px); }
+    }
+
+    .brain-node {
+        fill: #818cf8;
+        opacity: 0.3;
+    }
+
+    .thinking .brain-node {
+        animation: brainPulse 1s infinite;
+    }
+
+    /* Waveform Styles */
+    .waveform-container {
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 2rem;
-        cursor: pointer;
-        transition: var(--transition);
-        border: 2px solid var(--accent);
+        gap: 4px;
+        height: 40px;
+        margin-top: 20px;
+        opacity: 0;
+        transition: opacity 0.3s;
     }
 
-    .record-btn.active {
-        background: var(--accent);
-        color: white;
-        box-shadow: 0 0 30px rgba(244, 63, 94, 0.4);
-        transform: scale(1.1);
+    .waveform-container.active {
+        opacity: 1;
     }
 
-    .session-progress {
-        display: flex;
-        gap: 0.3rem;
-        justify-content: center;
-        margin-top: 2rem;
-        flex-wrap: wrap;
+    .wave-bar {
+        width: 4px;
+        height: 10px;
+        background: #6366f1;
+        border-radius: 4px;
     }
 
-    .progress-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--glass-border);
+    @keyframes wavePulse {
+        0%, 100% { height: 10px; }
+        50% { height: 30px; }
     }
 
-    .progress-dot.active {
-        background: var(--primary);
+    .active .wave-bar {
+        animation: wavePulse 0.5s infinite ease-in-out;
     }
 
-    .progress-dot.completed {
-        background: var(--secondary);
+    .active .wave-bar:nth-child(2) { animation-delay: 0.1s; }
+    .active .wave-bar:nth-child(3) { animation-delay: 0.2s; }
+    .active .wave-bar:nth-child(4) { animation-delay: 0.3s; }
+    .active .wave-bar:nth-child(5) { animation-delay: 0.4s; }
+
+    .question-text {
+        font-size: 1.25rem;
+        font-weight: 500;
+        line-height: 1.6;
+        margin-bottom: 2rem;
+        color: rgba(255, 255, 255, 0.9);
+        text-align: left;
+    }
+
+    .question-card {
+        background: rgba(30, 41, 59, 0.5);
+        backdrop-filter: blur(12px);
+        padding: 2.5rem;
+        border-radius: 32px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        max-height: 500px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--primary) transparent;
+    }
+
+    .question-card::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .question-card::-webkit-scrollbar-thumb {
+        background-color: var(--primary);
+        border-radius: 10px;
+    }
+
+    .pulse-text {
+        animation: pulseText 1.5s infinite;
+    }
+
+    @keyframes pulseText {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    .brain-icon {
+        font-size: 1.2rem;
+        margin-right: 5px;
     }
 </style>
 {% endblock %}
@@ -106,9 +174,54 @@
                 <div style="position: absolute; bottom: 20px; left: 20px; background: rgba(0,0,0,0.6); padding: 0.5rem 1rem; border-radius: 10px; color: white; font-weight: 700;">
                     <i class="fas fa-user-tie" style="color: var(--primary);"></i> AI HR Manager
                 </div>
-                <!-- Placeholder for Avatar Video/Canvas -->
-                <div id="avatar-container" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(45deg, #1e1b4b, #312e81);">
-                    <i class="fas fa-robot" style="font-size: 5rem; color: rgba(255,255,255,0.2); animation: pulse 2s infinite;"></i>
+                <!-- Premium Animated Avatar -->
+                <div id="avatar-container">
+                    <svg class="avatar-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Neck -->
+                        <rect x="85" y="160" width="30" height="20" fill="#312e81" rx="5" />
+                        
+                        <g class="avatar-head">
+                            <!-- Face -->
+                            <ellipse cx="100" cy="100" rx="70" ry="80" fill="#1e1b4b" stroke="#6366f1" stroke-width="2" />
+                            
+                            <!-- Thinking Nodes (Brain) -->
+                            <g id="brain-group">
+                                <circle class="brain-node" cx="80" cy="60" r="4" />
+                                <circle class="brain-node" cx="100" cy="50" r="5" />
+                                <circle class="brain-node" cx="120" cy="60" r="4" />
+                            </g>
+
+                            <!-- Eyes -->
+                            <g class="eyes">
+                                <!-- Left Eye -->
+                                <g transform="translate(70, 90)">
+                                    <circle cx="0" cy="0" r="10" fill="white" />
+                                    <circle cx="0" cy="0" r="4" fill="#020617" id="left-pupil" />
+                                    <rect class="eye-lid" x="-12" y="-12" width="24" height="24" fill="#1e1b4b" rx="2" transform="scale(1, 0)" />
+                                </g>
+                                <!-- Right Eye -->
+                                <g transform="translate(130, 90)">
+                                    <circle cx="0" cy="0" r="10" fill="white" />
+                                    <circle cx="0" cy="0" r="4" fill="#020617" id="right-pupil" />
+                                    <rect class="eye-lid" x="-12" y="-12" width="24" height="24" fill="#1e1b4b" rx="2" transform="scale(1, 0)" />
+                                </g>
+                            </g>
+
+                            <!-- Mouth -->
+                            <rect id="avatar-mouth" x="80" y="140" width="40" height="4" fill="#6366f1" rx="2" />
+                        </g>
+                    </svg>
+
+                    <!-- Voice Waveform -->
+                    <div class="waveform-container" id="ai-waveform">
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                    </div>
                 </div>
             </div>
 
@@ -130,7 +243,7 @@
         <!-- Right: Content & Controls -->
         <div style="display: flex; flex-direction: column; gap: 1.5rem;">
             <div class="question-card" style="padding: 2rem; min-height: auto;">
-                <span class="question-number">Question <span id="current-q-num">1</span> of {{ questions|length }}</span>
+                <span class="question-number">Interview Round <span id="current-q-num">1</span></span>
                 <h2 class="question-text" id="q-text" style="font-size: 1.5rem; margin-bottom: 2rem;">{{ questions.0.question_text }}</h2>
                 
                 <div class="recording-area">
@@ -182,11 +295,10 @@
 <script>
     // --- GLOBAL VARIABLES ---
     let currentIdx = 0;
-    const questions = [
-        {% for q in questions %}
-            { id: {{ q.id }}, text: "{{ q.question_text|escapejs }}" },
-        {% endfor %}
-    ];
+    let questionsCount = {{ questions|length }};
+    let currentQuestionId = {{ questions.0.id }};
+    let nextQuestionText = "";
+    let nextQuestionId = null;
 
     const recordBtn = document.getElementById('record-btn');
     const recordStatus = document.getElementById('record-status');
@@ -194,7 +306,7 @@
     const nextBtn = document.getElementById('next-btn');
     const qText = document.getElementById('q-text');
     const qNum = document.getElementById('current-q-num');
-    const dots = document.querySelectorAll('.progress-dot');
+    const dotsContainer = document.querySelector('.session-progress');
     const webcamVideo = document.getElementById('webcam-feed');
     const canvasElement = document.getElementById('face-mesh-overlay');
     const canvasCtx = canvasElement.getContext('2d');
@@ -206,12 +318,60 @@
     let chunks = [];
     let globalStream;
 
-    // --- AI HR Voice ---
+    // --- AI HR Voice & Animation States ---
+    const userVoicePreference = "{{ request.user.ai_voice|escapejs }}";
+    const userSpeedPreference = parseFloat("{{ request.user.speaking_speed|default:1.0 }}");
+    const avatarContainer = document.getElementById('avatar-container');
+    const avatarMouth = document.getElementById('avatar-mouth');
+    const aiWaveform = document.getElementById('ai-waveform');
+    const leftPupil = document.getElementById('left-pupil');
+    const rightPupil = document.getElementById('right-pupil');
+
+    function setAvatarState(state) {
+        avatarContainer.classList.remove('thinking', 'speaking', 'idle');
+        avatarMouth.classList.remove('mouth-speaking');
+        aiWaveform.classList.remove('active');
+
+        if (state === 'speaking') {
+            avatarContainer.classList.add('speaking');
+            avatarMouth.classList.add('mouth-speaking');
+            aiWaveform.classList.add('active');
+        } else if (state === 'thinking') {
+            avatarContainer.classList.add('thinking');
+        } else {
+            avatarContainer.classList.add('idle');
+        }
+    }
+
+    // Natural Pupil Movement
+    setInterval(() => {
+        const x = (Math.random() - 0.5) * 4;
+        const y = (Math.random() - 0.5) * 4;
+        leftPupil.setAttribute('transform', `translate(${x}, ${y})`);
+        rightPupil.setAttribute('transform', `translate(${x}, ${y})`);
+    }, 3000);
+
     function speak(text) {
-        window.speechSynthesis.cancel(); // Stop any current speech
+        window.speechSynthesis.cancel(); 
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 0.9;
-        utterance.pitch = 1.0;
+        
+        // Settings Integration
+        utterance.rate = userSpeedPreference;
+        
+        // Voice Selection Logic
+        const voices = window.speechSynthesis.getVoices();
+        let selectedVoice = voices.find(v => v.name.includes(userVoicePreference.split(' - ')[1]) || v.name.includes(userVoicePreference.split(' - ')[0]));
+        
+        if (!selectedVoice) {
+            // Fallback: Just look for Female/Male or primary language
+            selectedVoice = voices.find(v => v.lang.startsWith('en'));
+        }
+        
+        if (selectedVoice) utterance.voice = selectedVoice;
+
+        utterance.onstart = () => setAvatarState('speaking');
+        utterance.onend = () => setAvatarState('idle');
+        
         window.speechSynthesis.speak(utterance);
     }
 
@@ -231,15 +391,12 @@
     faceMesh.onResults((results) => {
         if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
             const landmarks = results.multiFaceLandmarks[0];
-            
-            // 1. Eye Contact
             const leftEye = landmarks[468]; 
             const isLookingAtCamera = (leftEye.x > 0.4 && leftEye.x < 0.6);
             eyeBadge.innerHTML = isLookingAtCamera ? '<i class="fas fa-eye"></i> Eye Contact: Good' : '<i class="fas fa-eye-slash"></i> Look at Camera';
             eyeBadge.style.borderColor = isLookingAtCamera ? '#10b981' : '#ef4444';
             eyeBadge.style.color = isLookingAtCamera ? '#10b981' : '#ef4444';
 
-            // 2. Emotion/Smile
             const mouthTop = landmarks[13].y;
             const mouthBottom = landmarks[14].y;
             const mouthLeft = landmarks[61].x;
@@ -286,7 +443,8 @@
             camera.start();
 
             recordStatus.innerText = "AI HR Ready. Listening...";
-            speak(`Hello! I am your AI HR Manager. Let's begin the interview for the ${ "{{ session.position|escapejs }}" } role. Here is your first question: ${questions[0].text}`);
+            const firstQ = qText.innerText;
+            speak(`Hello! I am your AI HR Manager. Let's begin the interview for the ${ "{{ session.position|escapejs }}" } role. ${firstQ}`);
         } catch (e) {
             console.error(e);
             recordStatus.innerText = "Error: Camera/Mic blocked. Please allow permissions.";
@@ -320,12 +478,15 @@
     async function analyzeAnswer(blob) {
         feedbackArea.style.display = 'none';
         recordStatus.style.display = 'block';
-        recordStatus.innerText = "AI is evaluating your response...";
+        recordStatus.innerHTML = '<span class="brain-icon">🧠</span> AI HR is analyzing your logic...';
+        recordStatus.classList.add('pulse-text');
         recordBtn.style.display = 'none';
+
+        setAvatarState('thinking');
 
         const formData = new FormData();
         formData.append('audio', blob, 'answer.wav');
-        formData.append('question_id', questions[currentIdx].id);
+        formData.append('question_id', currentQuestionId);
 
         try {
             const res = await fetch(`{% url 'interview:evaluate_answer' session.pk %}`, { method: 'POST', body: formData });
@@ -338,34 +499,66 @@
             document.getElementById('conf-val').innerText = data.conf_score + "%";
             document.getElementById('conf-bar').style.width = data.conf_score + "%";
             
-            // AI Speaks Feedback Reply
-            if (data.reply) speak(data.reply);
+            // AI Response (Next Question)
+            if (data.reply) {
+                nextQuestionText = data.reply;
+                nextQuestionId = data.next_q_id;
+                // If it's a dynamic follow-up, speak it now? 
+                // In your requested flow: Analysis -> AI reply -> user clicks next.
+                // But typically interviewer speaks immediately.
+                speak(data.reply);
+            }
+
+            if (data.is_finished) {
+                nextBtn.innerText = "Finish Interview & View Feedback";
+                nextBtn.classList.add('btn-secondary');
+            }
             
             const stressVal = data.conf_score > 80 ? 'Low' : (data.conf_score > 60 ? 'Normal' : 'High');
             document.getElementById('stress-val').innerText = stressVal;
             document.getElementById('stress-bar').style.width = (100 - data.conf_score) + "%";
         } catch (e) {
             console.error(e);
-            recordStatus.innerText = "Analysis failed. Please try again.";
+            setAvatarState('idle');
+            recordStatus.innerHTML = "Analysis failed. Please try again.";
+            recordStatus.classList.remove('pulse-text');
             recordBtn.style.display = 'flex';
         }
     }
 
     nextBtn.addEventListener('click', () => {
-        dots[currentIdx].classList.remove('active');
-        dots[currentIdx].classList.add('completed');
-        currentIdx++;
+        const dots = document.querySelectorAll('.progress-dot');
+        if (currentIdx < dots.length) {
+            dots[currentIdx].classList.remove('active');
+            dots[currentIdx].classList.add('completed');
+        } else {
+            // Dynamically add a dot
+            const newDot = document.createElement('div');
+            newDot.className = 'progress-dot completed';
+            dotsContainer.appendChild(newDot);
+        }
         
-        if (currentIdx < questions.length) {
-            qText.innerText = questions[currentIdx].text;
+        if (nextQuestionId) {
+            currentIdx++;
+            currentQuestionId = nextQuestionId;
+            qText.innerText = nextQuestionText;
             qNum.innerText = currentIdx + 1;
-            dots[currentIdx].classList.add('active');
+            
+            // Add a new dot for the next question
+            const nextDot = document.createElement('div');
+            nextDot.className = 'progress-dot active';
+            dotsContainer.appendChild(nextDot);
+
             feedbackArea.style.display = 'none';
             recordBtn.style.display = 'flex';
             recordStatus.style.display = 'block';
             recordStatus.innerText = "Click to answer";
-            speak(`Next question: ${questions[currentIdx].text}`);
+            
+            // Clear buffer
+            nextQuestionId = null;
+            nextQuestionText = "";
         } else {
+            // End session
             const form = document.createElement('form');
             form.method = 'POST';
             form.innerHTML = `{% csrf_token %}`;

@@ -10,13 +10,6 @@
         --glass-border: rgba(255, 255, 255, 0.1);
     }
 
-    body {
-        background: #0a0b14;
-        color: #ffffff;
-        font-family: 'Outfit', sans-serif;
-        overflow-x: hidden;
-    }
-
     .stranger-page {
         padding-top: 100px;
         min-height: 100vh;
@@ -94,9 +87,7 @@
         margin-bottom: 4rem;
     }
 
-    .speaker-box {
-        text-align: center;
-    }
+    .speaker-box { text-align: center; }
 
     .avatar-circle {
         width: 140px;
@@ -112,10 +103,7 @@
         transition: all 0.5s ease;
     }
 
-    .avatar-circle i {
-        font-size: 3rem;
-        color: rgba(255, 255, 255, 0.5);
-    }
+    .avatar-circle i { font-size: 3rem; color: rgba(255, 255, 255, 0.5); }
 
     .avatar-circle.active {
         border-color: var(--accent-primary);
@@ -123,8 +111,18 @@
         background: rgba(99, 102, 241, 0.1);
     }
 
-    .avatar-circle.active i {
-        color: var(--accent-primary);
+    .avatar-circle.active i { color: var(--accent-primary); }
+
+    .avatar-circle.speaking {
+        border-color: #10b981;
+        box-shadow: 0 0 30px rgba(16, 185, 129, 0.4);
+        animation: pulse-ring 1.5s infinite;
+    }
+
+    @keyframes pulse-ring {
+        0% { box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
+        50% { box-shadow: 0 0 30px rgba(16, 185, 129, 0.6); }
+        100% { box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
     }
 
     /* Subtitles Card */
@@ -215,6 +213,63 @@
         border-radius: 3rem;
         text-align: center;
     }
+
+    /* Mic Button */
+    .mic-btn {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        border: none;
+        font-size: 1.8rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 2rem auto;
+    }
+    .mic-btn.idle {
+        background: linear-gradient(135deg, #6366f1, #a855f7);
+        color: white;
+        box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+    }
+    .mic-btn.recording {
+        background: #ef4444;
+        color: white;
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
+        animation: mic-pulse 1.5s infinite;
+    }
+    @keyframes mic-pulse {
+        0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+        70% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+    .stats-row {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+    .stat-chip {
+        flex: 1;
+        background: rgba(255,255,255,0.03);
+        border-radius: 1rem;
+        padding: 1rem;
+        text-align: center;
+        border: 1px solid var(--glass-border);
+    }
+    .stat-chip .value {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--accent-primary);
+    }
+    .stat-chip .label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: rgba(255,255,255,0.4);
+        margin-top: 0.25rem;
+    }
 </style>
 {% endblock %}
 
@@ -225,31 +280,18 @@
     <div id="idle-state" class="hero-card">
         <div class="display-1 mb-4">🌍</div>
         <h1 class="fw-bold mb-3" style="font-size: 3rem;">Ready to Speak?</h1>
-        <p class="text-white-50 fs-5 mb-5">Connect with English learners worldwide and practice in real-time with an AI Coach.</p>
+        <p class="text-white-50 fs-5 mb-5">Practice English with an AI Coach that gives you real-time grammar feedback.</p>
         <div class="d-grid gap-3">
-            <button class="btn btn-premium btn-lg" onclick="startSearch()">
-                <i class="fas fa-bolt me-2"></i> Find a Partner
-            </button>
-            <button class="btn btn-secondary-glass" onclick="startVirtualMatch()">
-                <i class="fas fa-robot me-2"></i> Practice with AI (Demo)
+            <button class="btn btn-premium btn-lg" onclick="startAIPractice()">
+                <i class="fas fa-robot me-2"></i> Start AI Practice Session
             </button>
         </div>
-    </div>
-
-    <!-- SEARCHING STATE -->
-    <div id="searching-state" class="hero-card" style="display: none;">
-        <div class="spinner-grow text-primary mb-4" style="width: 4rem; height: 4rem;" role="status"></div>
-        <h2 class="fw-bold mb-3">Finding your match...</h2>
-        <p class="text-white-50 mb-5">Hang tight, connecting you to another learner.</p>
-        <button class="btn btn-link text-danger text-decoration-none fw-bold" onclick="stopSearch()">
-            Stop Searching
-        </button>
     </div>
 
     <!-- ACTIVE SESSION -->
     <div id="connected-state" class="session-container" style="display: none;">
         
-        <!-- Top Navigation (Only shown during call) -->
+        <!-- Top Navigation -->
         <div class="control-header">
             <div class="d-flex align-items-center">
                 <div class="badge bg-success rounded-pill me-3 px-3 py-2">
@@ -257,8 +299,8 @@
                 </div>
                 <div class="timer-pill" id="call-timer">00:00</div>
             </div>
-            <button class="btn btn-danger rounded-pill px-4" onclick="endCall()">
-                <i class="fas fa-phone-slash me-2"></i> Leave Room
+            <button class="btn btn-danger rounded-pill px-4" onclick="endSession()">
+                <i class="fas fa-sign-out-alt me-2"></i> End Session
             </button>
         </div>
 
@@ -270,7 +312,7 @@
                     <div class="topic-card">
                         <div class="topic-label">Current Discussion Topic</div>
                         <h3 id="current-topic" class="fw-bold mb-4 text-white">"What is your dream career and why?"</h3>
-                        <button class="btn btn-sm btn-outline-light rounded-pill px-4 opacity-50" onclick="generateNewTopic()">
+                        <button class="btn btn-sm btn-outline-light rounded-pill px-4 opacity-50" onclick="fetchNewTopic()">
                             <i class="fas fa-random me-2"></i> Next Topic
                         </button>
                     </div>
@@ -278,22 +320,44 @@
                     <!-- Avatars -->
                     <div class="speakers-row">
                         <div class="speaker-box">
-                            <div class="avatar-circle active" id="my-avatar">
+                            <div class="avatar-circle" id="my-avatar">
                                 <i class="fas fa-user"></i>
                             </div>
                             <span class="fw-bold">You</span>
                         </div>
                         <div class="speaker-box">
-                            <div class="avatar-circle" id="partner-avatar">
-                                <i class="fas fa-user-friends"></i>
+                            <div class="avatar-circle active" id="partner-avatar">
+                                <i class="fas fa-robot"></i>
                             </div>
-                            <span class="fw-bold text-white-50" id="partner-name">Partner</span>
+                            <span class="fw-bold text-white-50">AI Coach</span>
                         </div>
                     </div>
 
+                    <!-- Mic Button -->
+                    <button class="mic-btn idle" id="mic-btn" onclick="toggleRecording()">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <p class="text-center text-white-50 small mt-2" id="mic-status">Tap to start speaking</p>
+
                     <!-- Subtitles -->
                     <div class="subtitles-card">
-                        <div id="live-subtitles">Listening for voice...</div>
+                        <div id="live-subtitles">Your spoken words will appear here...</div>
+                    </div>
+
+                    <!-- Live Stats -->
+                    <div class="stats-row">
+                        <div class="stat-chip">
+                            <div class="value" id="stat-sentences">0</div>
+                            <div class="label">Sentences</div>
+                        </div>
+                        <div class="stat-chip">
+                            <div class="value" id="stat-words">0</div>
+                            <div class="label">Words</div>
+                        </div>
+                        <div class="stat-chip">
+                            <div class="value" id="stat-accuracy">0%</div>
+                            <div class="label">Grammar</div>
+                        </div>
                     </div>
 
                 </div>
@@ -310,7 +374,7 @@
                     <div id="ai-corrections" class="flex-grow-1 overflow-auto pe-2">
                         <div class="text-center text-muted mt-5 py-5 opacity-25">
                             <i class="fas fa-magic fa-3x mb-3"></i>
-                            <p class="small px-4">Speak clearly! Corrections will appear here in real-time.</p>
+                            <p class="small px-4">Speak clearly! Grammar corrections and coaching tips will appear here in real-time.</p>
                         </div>
                     </div>
                 </div>
@@ -361,108 +425,32 @@
     </div>
 </div>
 
-<script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 <script>
-    let chatSocket = null;
-    let peer = null;
-    let localStream = null;
-    let currentRoom = null;
+    // ── State ────────────────────────────────────────────────
+    let isRecording = false;
+    let recognition = null;
     let startTime = null;
     let timerInterval = null;
 
-    // Real Performance Tracking
+    // Performance Tracking
     let totalSentences = 0;
-    let grammarErrors = 0;
+    let grammarCorrect = 0;
     let totalWords = 0;
     let uniqueWords = new Set();
 
-    const topics = [
-        "What is your dream job and why?",
-        "Tell about a place you want to travel to.",
-        "What is your favorite food from your hometown?",
-        "If you could have any superpower, what would it be?",
-        "What was the most interesting thing that happened to you this week?",
-        "How do you usually spend your weekends?",
-        "Tell your partner about your favorite movie.",
-        "What are your hobbies besides learning English?"
-    ];
+    const csrfToken = '{{ csrf_token }}';
 
-    function generateNewTopic() {
-        const randomTopic = topics[Math.floor(Math.random() * topics.length)];
-        document.getElementById('current-topic').innerText = `"${randomTopic}"`;
-    }
-
-    function startSearch() { connectToWS(); }
-    function startVirtualMatch() { connectToWS(true); }
-
-    function connectToWS(isVirtual = false) {
+    // ── Start AI Practice ────────────────────────────────────
+    function startAIPractice() {
         document.getElementById('idle-state').style.display = 'none';
-        document.getElementById('searching-state').style.display = 'block';
-
-        const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
-        chatSocket = new WebSocket(`${ws_scheme}://${window.location.host}/ws/matchmaking/`);
-
-        chatSocket.onopen = () => {
-            if (isVirtual) chatSocket.send(JSON.stringify({ "type": "virtual_match" }));
-        };
-
-        chatSocket.onmessage = (e) => {
-            const data = JSON.parse(e.data);
-            if (data.type === "match_found") {
-                currentRoom = data.room_id;
-                document.getElementById('partner-name').innerText = data.partner_name;
-                initCall(data.room_id, isVirtual);
-            } else if (data.type === "live_feedback") {
-                displayLiveFeedback(data);
-            }
-        };
-    }
-
-    function stopSearch() {
-        if (chatSocket) chatSocket.close();
-        document.getElementById('idle-state').style.display = 'block';
-        document.getElementById('searching-state').style.display = 'none';
-    }
-
-    async function initCall(roomId, isVirtual = false) {
-        document.getElementById('searching-state').style.display = 'none';
         document.getElementById('connected-state').style.display = 'block';
-
+        
         startTime = Date.now();
         timerInterval = setInterval(updateTimer, 1000);
-
-        try {
-            localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            startSpeechRecognition();
-        } catch (err) { console.error("Mic denied"); }
-
-        // WebRTC Configuration with Google STUN servers
-        const peerConfig = {
-            config: {
-                'iceServers': [
-                    { url: 'stun:stun.l.google.com:19302' },
-                    { url: 'stun:stun1.l.google.com:19302' },
-                ]
-            }
-        };
-
-        peer = new Peer(peerConfig);
-        peer.on('open', (id) => {
-            chatSocket.send(JSON.stringify({ "type": "signal", "room_id": roomId, "data": { "peer_id": id } }));
-        });
-
-        chatSocket.onmessage = (e) => {
-            const data = JSON.parse(e.data);
-            if (data.type === "webrtc_signal" && data.data.peer_id) connectToPartner(data.data.peer_id);
-            else if (data.type === "live_feedback") displayLiveFeedback(data);
-        };
-
-        peer.on('call', (call) => {
-            call.answer(localStream);
-            handleCall(call);
-        });
+        fetchNewTopic();
     }
 
+    // ── Timer ────────────────────────────────────────────────
     function updateTimer() {
         const diff = Math.floor((Date.now() - startTime) / 1000);
         const mins = Math.floor(diff / 60).toString().padStart(2, '0');
@@ -470,120 +458,204 @@
         document.getElementById('call-timer').innerText = `${mins}:${secs}`;
     }
 
-    function startSpeechRecognition() {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) return;
-        const rec = new SpeechRecognition();
-        rec.continuous = true;
-        rec.interimResults = true;
-        rec.onresult = (event) => {
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                const text = event.results[i][0].transcript;
-                document.getElementById('live-subtitles').innerText = text;
-                if (event.results[i].isFinal) {
-                    totalSentences++;
-                    
-                    // Show 'Analyzing...' placeholder
-                    showAnalyzingPlaceholder(text);
-                    
-                    const words = text.trim().split(/\s+/);
-                    totalWords += words.length;
-                    words.forEach(w => uniqueWords.add(w.toLowerCase()));
-
-                    chatSocket.send(JSON.stringify({ "type": "speech_text", "room_id": currentRoom, "text": text }));
-                    // Pulse My Avatar
-                    document.getElementById('my-avatar').classList.add('active');
-                    setTimeout(() => document.getElementById('my-avatar').classList.remove('active'), 2000);
-                }
-            }
-        };
-        rec.start();
+    // ── Topic Generation ─────────────────────────────────────
+    async function fetchNewTopic() {
+        try {
+            const res = await fetch('/stranger/topic/');
+            const data = await res.json();
+            document.getElementById('current-topic').innerText = `"${data.topic}"`;
+        } catch (e) {
+            console.error("Topic fetch error:", e);
+        }
     }
 
+    // ── Mic Toggle ───────────────────────────────────────────
+    function toggleRecording() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("Speech recognition is not supported in this browser. Please use Chrome.");
+            return;
+        }
+
+        const micBtn = document.getElementById('mic-btn');
+        const micStatus = document.getElementById('mic-status');
+
+        if (!isRecording) {
+            // Start Recording
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onresult = (event) => {
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    const text = event.results[i][0].transcript;
+                    document.getElementById('live-subtitles').innerText = text;
+
+                    // Pulse avatar while speaking
+                    document.getElementById('my-avatar').classList.add('speaking');
+
+                    if (event.results[i].isFinal) {
+                        document.getElementById('my-avatar').classList.remove('speaking');
+                        document.getElementById('my-avatar').classList.add('active');
+                        setTimeout(() => document.getElementById('my-avatar').classList.remove('active'), 2000);
+
+                        // Send to API for analysis
+                        analyzeSpeech(text);
+                    }
+                }
+            };
+
+            recognition.onerror = (e) => {
+                console.error("Speech error:", e.error);
+                if (e.error !== 'no-speech') {
+                    micStatus.innerText = `Error: ${e.error}. Tap to retry.`;
+                }
+            };
+
+            recognition.onend = () => {
+                // Auto-restart if still in recording mode
+                if (isRecording) {
+                    try { recognition.start(); } catch(e) {}
+                }
+            };
+
+            recognition.start();
+            isRecording = true;
+            micBtn.className = 'mic-btn recording';
+            micBtn.innerHTML = '<i class="fas fa-stop"></i>';
+            micStatus.innerText = "Listening... Speak clearly!";
+        } else {
+            // Stop Recording
+            if (recognition) recognition.stop();
+            isRecording = false;
+            micBtn.className = 'mic-btn idle';
+            micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+            micStatus.innerText = "Tap to start speaking";
+            document.getElementById('my-avatar').classList.remove('speaking');
+        }
+    }
+
+    // ── Analyze Speech via HTTP ──────────────────────────────
+    async function analyzeSpeech(text) {
+        // Show analyzing placeholder
+        showAnalyzingPlaceholder(text);
+        
+        // Update stats
+        totalSentences++;
+        const words = text.trim().split(/\s+/);
+        totalWords += words.length;
+        words.forEach(w => uniqueWords.add(w.toLowerCase()));
+        document.getElementById('stat-sentences').innerText = totalSentences;
+        document.getElementById('stat-words').innerText = totalWords;
+
+        try {
+            const res = await fetch('/stranger/analyze/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ text: text })
+            });
+            const data = await res.json();
+            displayFeedback(data);
+
+            // Update grammar accuracy
+            if (data.is_valid) grammarCorrect++;
+            const accuracy = totalSentences > 0 ? Math.round((grammarCorrect / totalSentences) * 100) : 0;
+            document.getElementById('stat-accuracy').innerText = accuracy + '%';
+
+        } catch (e) {
+            console.error("Analysis error:", e);
+            removePlaceholder();
+        }
+    }
+
+    // ── UI Helpers ───────────────────────────────────────────
     function showAnalyzingPlaceholder(text) {
         const container = document.getElementById('ai-corrections');
         if (container.querySelector('.text-center')) container.innerHTML = '';
-        
+
         const div = document.createElement('div');
         div.id = 'temp-analyzing';
         div.className = 'feedback-item opacity-50';
         div.style.borderLeftColor = '#6366f1';
         div.innerHTML = `
-            <div class="small fw-bold mb-1">AI is thinking...</div>
-            <div class="small text-white-50 italic">"${text}"</div>
+            <div class="small fw-bold mb-1"><i class="fas fa-spinner fa-spin me-2"></i>AI is analyzing...</div>
+            <div class="small text-white-50 fst-italic">"${text}"</div>
         `;
         container.prepend(div);
     }
 
-    function displayLiveFeedback(data) {
-        const container = document.getElementById('ai-corrections');
-        
-        // Remove placeholder
-        const placeholder = document.getElementById('temp-analyzing');
-        if (placeholder) placeholder.remove();
+    function removePlaceholder() {
+        const p = document.getElementById('temp-analyzing');
+        if (p) p.remove();
+    }
 
+    function displayFeedback(data) {
+        removePlaceholder();
+
+        const container = document.getElementById('ai-corrections');
         if (container.querySelector('.text-center')) container.innerHTML = '';
-        
+
         const div = document.createElement('div');
         div.className = 'feedback-item';
-        const isV = data.feedback.is_valid;
-        if (!isV && data.sender_name === "You") {
-            grammarErrors++;
-        }
-        div.style.borderLeftColor = isV ? '#10b981' : '#ef4444';
-        
-        div.innerHTML = `
-            <div class="small fw-bold mb-1">${data.sender_name}</div>
-            <div class="small text-white-50 italic mb-2">"${data.original}"</div>
-            <div class="small fw-medium" style="color: ${isV ? '#10b981' : '#f87171'};">
-                ${data.feedback.feedback}
+        div.style.borderLeftColor = data.is_valid ? '#10b981' : '#ef4444';
+
+        let feedbackHTML = `
+            <div class="small fw-bold mb-1" style="color: ${data.is_valid ? '#10b981' : '#f87171'};">
+                <i class="fas ${data.is_valid ? 'fa-check-circle' : 'fa-times-circle'} me-1"></i>
+                ${data.is_valid ? 'Perfect!' : 'Needs Improvement'}
+            </div>
+            <div class="small text-white-50 fst-italic mb-2">"${data.original}"</div>
+            <div class="small" style="color: rgba(255,255,255,0.7);">
+                ${data.feedback}
             </div>
         `;
-        container.prepend(div);
-        
-        // Pulse Partner Avatar if it's them
-        if (data.sender_name !== "You") {
-            document.getElementById('partner-avatar').classList.add('active');
-            setTimeout(() => document.getElementById('partner-avatar').classList.remove('active'), 2000);
+
+        if (data.coaching_tip) {
+            feedbackHTML += `
+                <div class="small mt-2 pt-2" style="border-top: 1px solid rgba(255,255,255,0.05); color: #a78bfa;">
+                    <i class="fas fa-lightbulb me-1"></i> ${data.coaching_tip}
+                </div>
+            `;
         }
+
+        div.innerHTML = feedbackHTML;
+        container.prepend(div);
+
+        // Pulse AI avatar
+        document.getElementById('partner-avatar').classList.add('speaking');
+        setTimeout(() => document.getElementById('partner-avatar').classList.remove('speaking'), 1500);
     }
 
-    function connectToPartner(pid) {
-        const call = peer.call(pid, localStream);
-        handleCall(call);
-    }
-
-    function handleCall(call) {
-        call.on('stream', (rs) => {
-            const audio = new Audio();
-            audio.srcObject = rs;
-            audio.play();
-        });
-    }
-
-    function endCall() {
+    // ── End Session ──────────────────────────────────────────
+    function endSession() {
+        // Stop recording
+        if (recognition) recognition.stop();
+        isRecording = false;
         clearInterval(timerInterval);
+
         const durationSeconds = Math.floor((Date.now() - startTime) / 1000);
         document.getElementById('final-duration').innerText = document.getElementById('call-timer').innerText;
-        
-        // --- REAL SCORING LOGIC ---
-        
-        // 1. Grammar Score: 100 - (errors / total sentences * 100)
-        let grammarScore = totalSentences > 0 ? Math.round(Math.max(0, 100 - (grammarErrors / totalSentences * 100))) : 0;
-        
-        // 2. Fluency Score: Based on Words Per Minute (WPM). Target is ~100-130 WPM for learners.
+
+        // Grammar Score
+        let grammarScore = totalSentences > 0 ? Math.round((grammarCorrect / totalSentences) * 100) : 0;
+
+        // Fluency Score (WPM normalized to ~110 target)
         let wpm = durationSeconds > 0 ? (totalWords / (durationSeconds / 60)) : 0;
-        let fluencyScore = Math.min(100, Math.round((wpm / 110) * 100)); // Normalized to 110 WPM
+        let fluencyScore = Math.min(100, Math.round((wpm / 110) * 100));
         if (totalSentences === 0) fluencyScore = 0;
 
-        // 3. Vocab Score: Based on Unique Words vs Total Words ratio and volume
+        // Vocab Score (unique word diversity)
         let vocabScore = totalWords > 0 ? Math.min(100, Math.round((uniqueWords.size / totalWords) * 120)) : 0;
-        if (totalWords < 10) vocabScore = Math.min(vocabScore, 50); // Penalty for very short sessions
+        if (totalWords < 10) vocabScore = Math.min(vocabScore, 50);
 
         document.getElementById('final-fluency').innerText = fluencyScore + "%";
         document.getElementById('final-grammar').innerText = grammarScore + "%";
         document.getElementById('final-vocab').innerText = vocabScore + "%";
-        
+
         new bootstrap.Modal(document.getElementById('sessionEndModal')).show();
     }
 </script>

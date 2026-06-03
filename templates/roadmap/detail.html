@@ -538,10 +538,25 @@
 
     function speakText(text) {
         if (!window.speechSynthesis) return;
-        window.speechSynthesis.cancel(); // Stop current speech
+        window.speechSynthesis.cancel(); 
+        
         const msg = new SpeechSynthesisUtterance(text);
-        msg.rate = 0.9;
-        msg.pitch = 1.0;
+        
+        // --- Settings Integration ---
+        const userVoicePref = "{{ request.user.ai_voice|escapejs }}";
+        const userSpeedPref = parseFloat("{{ request.user.speaking_speed|default:1.0 }}");
+        
+        msg.rate = userSpeedPref;
+        
+        const voices = window.speechSynthesis.getVoices();
+        let selectedVoice = voices.find(v => v.name.includes(userVoicePref.split(' - ')[1]) || v.name.includes(userVoicePref.split(' - ')[0]));
+        
+        if (!selectedVoice) {
+            selectedVoice = voices.find(v => v.lang.startsWith('en'));
+        }
+        
+        if (selectedVoice) msg.voice = selectedVoice;
+        
         window.speechSynthesis.speak(msg);
     }
 
@@ -774,11 +789,19 @@
         recognition.onerror = (event) => {
             console.error("Mic Error:", event.error);
             clearTimeout(silenceTimer);
+            
+            const liveBox = document.getElementById('live-transcript-box');
+            
             if (event.error === 'not-allowed') {
                 showToast("Permission Denied: Enable your microphone in browser settings.");
+                liveBox.innerHTML = "<span style='color:#ef4444;'>Mic Blocked.</span> <button onclick='startMic()' style='background:var(--primary); border:none; color:white; padding:5px 15px; border-radius:8px; cursor:pointer; margin-left:10px;'>Retry Mic</button>";
             } else if (event.error === 'network') {
                 showToast("Network Error: Speech recognition needs an internet connection.");
+                liveBox.innerHTML = "<span style='color:#ef4444;'>Internet Required for AI Speaking.</span> <button onclick='startMic()' style='background:var(--primary); border:none; color:white; padding:5px 15px; border-radius:8px; cursor:pointer; margin-left:10px;'>Retry</button>";
+            } else if (event.error === 'no-speech') {
+                liveBox.innerHTML = "No speech detected. Please try again.";
             }
+            
             isTraining = false;
             readMicBtn.classList.remove('active');
         };
@@ -842,26 +865,23 @@
 
     function highlightWords(transcript) {
         const words = document.querySelectorAll('.word');
+        const transcriptWords = transcript.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"").split(/\s+/);
         let matchedCount = 0;
         
         words.forEach(el => {
             const wordText = el.innerText.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"");
-            // Match whole words only using word boundaries or exact match in split transcript
-            const transcriptWords = transcript.split(/\s+/);
+            
+            // Real-time highlight: if spoken at all, mark green for encouragement
             if (transcriptWords.includes(wordText)) {
                 el.classList.add('correct');
-                el.classList.remove('wrong');
+                el.classList.remove('wrong', 'missing');
+                el.style.color = "#10b981"; // Strong green
             }
             if (el.classList.contains('correct')) matchedCount++;
         });
 
         const finishBtn = document.getElementById('finish-speaking-btn');
-        if (matchedCount === words.length) {
-            // Wait for user to click check to get full analysis
-            finishBtn.style.display = 'block';
-            finishBtn.innerText = "Check My Pronunciation";
-            finishBtn.onclick = checkPronunciation;
-        } else if (transcript.length > 5) {
+        if (matchedCount > 0 || transcript.length > 5) {
             finishBtn.style.display = 'block';
             finishBtn.innerText = "Check My Pronunciation";
             finishBtn.onclick = checkPronunciation;
@@ -899,19 +919,32 @@
             document.getElementById('score-fluency').innerText = data.fluency_score + "%";
             
             const words = document.querySelectorAll('.word');
-            let wrongWords = [];
+            let mispronouncedWords = [];
+            let missingWords = [];
+            
             data.results.forEach((res, idx) => {
                 if (idx < words.length) {
-                    if (res.is_correct) {
+                    words[idx].classList.remove('correct', 'wrong', 'missing');
+                    
+                    if (res.status === 'correct') {
                         words[idx].classList.add('correct');
-                        words[idx].classList.remove('wrong');
-                    } else {
+                        words[idx].style.color = "#10b981";
+                    } else if (res.status === 'mispronounced') {
                         words[idx].classList.add('wrong');
-                        words[idx].classList.remove('correct');
-                        wrongWords.push(res.word);
+                        words[idx].style.color = "#f43f5e"; // Red
+                        mispronouncedWords.push(res.word);
+                    } else if (res.status === 'missing') {
+                        words[idx].style.color = "#64748b"; // Grey
+                        words[idx].style.textDecoration = "line-through";
+                        missingWords.push(res.word);
                     }
                 }
             });
+
+            // Specific Feedback
+            let feedbackParts = [];
+            if (missingWords.length > 0) feedbackParts.push(`Missing: ${missingWords.join(", ")}`);
+            if (mispronouncedWords.length > 0) feedbackParts.push(`Try to say better: ${mispronouncedWords.join(", ")}`);
 
             // Grammar Check
             const gbBox = document.getElementById('grammar-feedback-box');
@@ -929,13 +962,18 @@
                 updateScore(50);
                 setTimeout(() => completeSpeaking(true), 2000);
             } else {
-                showToast(`Missed: ${wrongWords.join(", ")}`);
-                speakText(`Try again. Focus on: ${wrongWords.join(", ")}`);
+                const combinedFeedback = feedbackParts.join(" | ");
+                showToast(combinedFeedback || "Keep practicing!");
+                speakText("Try again for better results.");
                 finishBtn.innerText = "Retry Sentence";
-                finishBtn.style.background = "#ef4444";
+                finishBtn.style.background = "#f43f5e";
                 finishBtn.onclick = () => {
                     document.getElementById('ai-scoring-panel').style.display = 'none';
-                    words.forEach(el => { el.classList.remove('wrong'); el.classList.remove('correct'); });
+                    words.forEach(el => { 
+                        el.classList.remove('wrong', 'correct', 'missing'); 
+                        el.style.color = ""; 
+                        el.style.textDecoration = "";
+                    });
                     finishBtn.style.display = 'none';
                     finishBtn.style.background = ""; 
                     readMicBtn.click();
@@ -969,6 +1007,33 @@
 
     // ── Writing Logic ───────────────────────────────
     let completedSentences = 0;
+    
+    function celebrate() {
+        const duration = 3 * 1000;
+        const end = Date.now() + duration;
+
+        (function frame() {
+            confetti({
+                particleCount: 5,
+                angle: 60,
+                spread: 55,
+                origin: { x: 0 },
+                colors: ['#6366f1', '#a855f7', '#10b981']
+            });
+            confetti({
+                particleCount: 5,
+                angle: 120,
+                spread: 55,
+                origin: { x: 1 },
+                colors: ['#6366f1', '#a855f7', '#10b981']
+            });
+
+            if (Date.now() < end) {
+                requestAnimationFrame(frame);
+            }
+        }());
+    }
+
     document.getElementById('check-writing-btn').onclick = async function() {
         const inputArea = document.getElementById('writing-input');
         const text = inputArea.value.trim();
@@ -1008,6 +1073,7 @@
                 showToast("Great job! You have completed this lesson.");
                 updateScore(30);
                 speakText("Excellent! Your sentence is correct.");
+                celebrate();
                 
                 document.getElementById('check-writing-btn').innerText = "Finish Lesson";
                 document.getElementById('check-writing-btn').style.background = "#10b981";

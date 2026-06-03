@@ -5,6 +5,7 @@ from django.views.decorators.csrf import csrf_exempt
 from .models import Level, Concept, Exercise, UserConceptProgress
 import markdown as md
 import json
+import difflib
 
 @login_required
 def index(request):
@@ -35,36 +36,67 @@ def concept_detail(request, slug):
 def analyze_speaking(request):
     if request.method == 'POST':
         data = json.loads(request.body)
-        transcript = data.get('transcript', '')
-        target_text = data.get('target_text', '')
+        transcript = data.get('transcript', '').lower().strip()
+        target_text = data.get('target_text', '').lower().strip()
         
-        transcript_words = transcript.lower().strip().split()
-        target_words = target_text.lower().strip().split()
+        if not transcript:
+            return JsonResponse({
+                'pronunciation_score': 0,
+                'fluency_score': 0,
+                'results': [{'word': w, 'is_correct': False} for w in target_text.split()],
+                'grammar_feedback': "No speech detected.",
+                'correction': ""
+            })
+
+        # Remove punctuation for better matching
+        import re
+        def clean_text(text):
+            return re.sub(r'[^\w\s]', '', text)
+
+        clean_transcript = clean_text(transcript)
+        clean_target = clean_text(target_text)
         
-        # 1. Word Highlight & Pronunciation Score
+        transcript_words = clean_transcript.split()
+        target_words_clean = clean_target.split()
+        target_words_original = target_text.split()
+        
+        # 1. Advanced Sequence Matching
+        matcher = difflib.SequenceMatcher(None, target_words_clean, transcript_words)
         results = []
         correct_count = 0
-        clean_transcript_words = [''.join(e for e in w if e.isalnum()) for w in transcript_words]
         
-        for word in target_words:
-            # Clean punctuation for comparison
-            clean_word = ''.join(e for e in word if e.isalnum())
-            is_correct = clean_word in clean_transcript_words
-                
-            results.append({
-                'word': word,
-                'is_correct': is_correct
-            })
-            if is_correct:
-                correct_count += 1
+        # Initialize results with 'missing' status
+        for word in target_words_original:
+            results.append({'word': word, 'is_correct': False, 'status': 'missing'})
+
+        # Update results based on matches
+        for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+            if tag == 'equal':
+                for i in range(i1, i2):
+                    results[i]['is_correct'] = True
+                    results[i]['status'] = 'correct'
+                    correct_count += 1
+            elif tag == 'replace':
+                for i in range(i1, i2):
+                    results[i]['status'] = 'mispronounced'
+            elif tag == 'delete':
+                for i in range(i1, i2):
+                    results[i]['status'] = 'missing'
+
+        pronunciation_score = (correct_count / len(target_words_original)) * 100 if target_words_original else 0
         
-        pronunciation_score = (correct_count / len(target_words)) * 100 if target_words else 0
+        # 2. Fluency Score (Speed and filler words)
+        fillers = ['um', 'uh', 'ah', 'like', 'actually']
+        filler_count = sum(1 for w in transcript.split() if w in fillers)
         
-        # 2. Fluency Score (Basic estimation based on length match and filler words)
-        fillers = ['um', 'uh', 'ah', 'like']
-        filler_count = sum(1 for w in transcript_words if w in fillers)
-        length_penalty = abs(len(target_words) - len(transcript_words)) * 5
-        fluency_score = max(0, min(100, 100 - (filler_count * 10) - length_penalty))
+        # Penalty for extra words (repetition or irrelevant speech)
+        extra_words = len(transcript_words) - correct_count
+        extra_penalty = max(0, extra_words * 2) 
+        
+        # Penalty for missing words
+        missing_penalty = (len(target_words_original) - correct_count) * 3
+        
+        fluency_score = max(0, min(100, 100 - (filler_count * 15) - extra_penalty - missing_penalty))
         
         # 3. Grammar Detection
         from grammar.utils import GrammarChecker

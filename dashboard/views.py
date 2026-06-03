@@ -134,6 +134,7 @@ def settings_view(request):
         user.notifications_enabled = request.POST.get('notifications') == 'on'
         user.privacy_visible = request.POST.get('privacy') == 'on'
         user.save()
+        messages.success(request, "Settings updated successfully! Your AI coach is now tailored to your preferences.")
         
     return render(request, 'dashboard/settings.html', {'user': user})
 

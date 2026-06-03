@@ -4,6 +4,7 @@ from django.conf import settings
 class InterviewSession(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     position = models.CharField(max_length=100, default='Software Engineer')
+    experience_level = models.CharField(max_length=50, default='Fresher')
     resume = models.FileField(upload_to='resumes/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_completed = models.BooleanField(default=False)

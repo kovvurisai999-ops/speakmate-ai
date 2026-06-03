@@ -1,3 +1,9 @@
+import os
+import django
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core_project.settings')
+django.setup()
+
 from roadmap.models import Concept, Exercise
 
 def update_simple_present():

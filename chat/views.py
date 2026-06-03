@@ -26,18 +26,20 @@ def send_message(request):
         try:
             data = json.loads(request.body)
             user_text = data.get('message', '')
-            print(f"DEBUG: Processing message: {user_text}")
+            user = request.user
             
-            # Line-based markers - The most reliable way
+            # Integrated Settings into System Prompt
             system_prompt = (
-                "You are an expert English Coach. Analyze the user input.\n"
-                "1. If it's in Telugu, translate it to natural English.\n"
+                f"You are an expert English Coach with a {user.ai_personality} personality. "
+                f"The student's difficulty level is {user.ai_difficulty} and preferred language is {user.preferred_language}.\n"
+                "Analyze the user input:\n"
+                f"1. If it's in {user.preferred_language}, translate it to natural English.\n"
                 "2. Check the grammar and give a short tip.\n"
-                "3. Give a friendly reply.\n"
+                "3. Give a friendly reply matching your assigned personality.\n"
                 "Output exactly in this format:\n"
                 "ENGLISH: [The full English translation]\n"
                 "TIP: [A short grammar tip]\n"
-                "REPLY: [Your warm conversational reply]"
+                "REPLY: [Your conversational reply]"
             )
             
             full_content = gemini_ai.ask(system_prompt, user_text, max_tokens=500)
@@ -56,25 +58,27 @@ def send_message(request):
                 elif line.startswith('REPLY:'):
                     ai_reply = line.replace('REPLY:', '').strip()
             
-            # Ensure ai_reply is not just the whole content if we found a specific reply
+            # Fallback split
             if ai_reply == full_content and 'REPLY:' in full_content:
-                # Fallback split if line-based failed (e.g. no newline)
-                try:
-                    ai_reply = full_content.split('REPLY:')[1].strip()
-                except:
-                    pass
+                try: ai_reply = full_content.split('REPLY:')[1].strip()
+                except: pass
 
-            # 4. Local TTS (Voice)
+            # 4. Local TTS (Dynamic Voice & Speed)
             audio_url = None
             try:
                 filename = f"reply_{uuid.uuid4().hex}.mp3"
-                audio_url = tts_engine.save_to_file(ai_reply, filename)
+                audio_url = tts_engine.save_to_file(
+                    ai_reply, 
+                    filename, 
+                    voice_pref=user.ai_voice, 
+                    speed_pref=user.speaking_speed
+                )
             except Exception as e:
                 print(f"TTS Error: {e}")
 
             # 5. Save to DB
             chat_msg = ChatMessage.objects.create(
-                user=request.user,
+                user=user,
                 content=user_text,
                 response=ai_reply,
                 feedback=grammar_feedback

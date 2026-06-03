@@ -13,6 +13,34 @@
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Light Professional Theme */
+.theme-light-professional {
+    --bg-dark: #f8fafc;
+    --bg-card: #ffffff;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --glass-bg: rgba(0, 0, 0, 0.03);
+    --glass-border: rgba(0, 0, 0, 0.08);
+}
+
+/* Deep Blue Theme */
+.theme-deep-blue {
+    --primary: #38bdf8;
+    --primary-dark: #0284c7;
+    --bg-dark: #082f49;
+    --bg-card: #0c4a6e;
+    --secondary: #7dd3fc;
+}
+
+/* Sunset Orange Theme */
+.theme-sunset-orange {
+    --primary: #f97316;
+    --primary-dark: #c2410c;
+    --bg-dark: #1c1917;
+    --bg-card: #292524;
+    --secondary: #fb923c;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -156,6 +184,7 @@ ul {
     margin-bottom: 1.5rem;
     background: linear-gradient(to right, #fff, #94a3b8);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -274,7 +303,8 @@ ul {
     background: rgba(99, 102, 241, 0.1);
 }
 
-.footer-links h4, .footer-newsletter h4 {
+.footer-links h4,
+.footer-newsletter h4 {
     font-size: 1.1rem;
     margin-bottom: 1.5rem;
 }
@@ -324,9 +354,11 @@ ul {
     .hero-content h1 {
         font-size: 3rem;
     }
+
     .nav-links {
         display: none;
     }
+
     .footer-grid {
         grid-template-columns: 1fr;
         gap: 2rem;

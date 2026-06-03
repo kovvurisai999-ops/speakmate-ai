@@ -23,7 +23,7 @@
     
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body class="theme-{{ user.app_theme|slugify|default:'dark-neon' }}">
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark py-3" style="background: rgba(10, 11, 20, 0.95) !important; backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.05);">
         <div class="container">
             <a href="/" class="navbar-brand d-flex align-items-center">
