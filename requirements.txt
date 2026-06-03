@@ -19,8 +19,6 @@ python-decouple
 google-generativeai
 google-genai
 openai
-librosa
-numpy==1.26.4
 pillow
 requests
 beautifulsoup4

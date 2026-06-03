@@ -5,7 +5,6 @@ class EmotionAnalyzer:
     def analyze_frame(self, frame):
         import cv2
         from deepface import DeepFace
-        import numpy as np
         try:
             # DeepFace.analyze returns a list of results
             results = DeepFace.analyze(frame, actions=['emotion'], enforce_detection=False)
