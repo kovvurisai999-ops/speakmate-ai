@@ -5,6 +5,8 @@ class TTSEngine:
     def __init__(self):
         self.enabled = False
         try:
+            if os.environ.get('VERCEL') == '1':
+                raise Exception("Running on Vercel, disabling local pyttsx3")
             import pyttsx3
             self.engine = pyttsx3.init()
             # Set property before adding anything to speak
