@@ -1,6 +1,5 @@
 import os
 from ai_engine.gemini import gemini_ai
-from textblob import TextBlob
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -56,10 +55,14 @@ class GrammarChecker:
 
         # 3. Spelling Fallback (Skipped for multilingual hints)
         if not is_multilingual:
-            blob = TextBlob(text)
-            corrected = str(blob.correct())
-            def clean(t): return "".join(c for c in t.lower() if c.isalnum() or c.isspace()).strip()
-            if clean(corrected) != clean(lower_text):
-                return corrected, f"Spelling issue: Suggested '{corrected}'.", False
+            try:
+                from textblob import TextBlob
+                blob = TextBlob(text)
+                corrected = str(blob.correct())
+                def clean(t): return "".join(c for c in t.lower() if c.isalnum() or c.isspace()).strip()
+                if clean(corrected) != clean(lower_text):
+                    return corrected, f"Spelling issue: Suggested '{corrected}'.", False
+            except ImportError:
+                pass  # textblob not available, skip spelling check
 
         return None, "Excellent! Your sentence is perfectly structured.", True

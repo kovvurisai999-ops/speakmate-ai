@@ -11,7 +11,6 @@ from django.views.decorators.csrf import csrf_exempt
 from .models import InterviewSession, InterviewQuestion
 from .data import INTERVIEW_QUESTIONS, CORE_HR_QUESTIONS
 from .utils import parse_resume
-from .pdf_gen import generate_interview_pdf, generate_session_report_pdf
 from speech.utils import SpeechManager
 from grammar.utils import GrammarChecker
 from ai_engine.gemini import gemini_ai
@@ -237,6 +236,7 @@ def evaluate_answer(request, pk):
 
 @login_required
 def download_report(request, pk):
+    from .pdf_gen import generate_session_report_pdf
     session = get_object_or_404(InterviewSession, pk=pk, user=request.user)
     questions = session.questions.all()
     buffer = generate_session_report_pdf(session, questions)
@@ -288,6 +288,7 @@ def delete_interview(request, pk):
 
 @login_required
 def download_guide(request):
+    from .pdf_gen import generate_interview_pdf
     position = request.GET.get('position', 'Frontend Developer')
     questions_data = INTERVIEW_QUESTIONS.get(position, [])
     buffer = generate_interview_pdf(position, questions_data)
