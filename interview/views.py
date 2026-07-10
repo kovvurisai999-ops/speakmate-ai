@@ -16,9 +16,21 @@ from speech.utils import SpeechManager
 from grammar.utils import GrammarChecker
 from ai_engine.gemini import gemini_ai
 
-# Initialize Engines
-speech_manager = SpeechManager()
-grammar_checker = GrammarChecker()
+# Engines initialized lazily on first request to prevent Vercel startup crash
+_speech_manager = None
+_grammar_checker = None
+
+def get_speech_manager():
+    global _speech_manager
+    if _speech_manager is None:
+        _speech_manager = SpeechManager()
+    return _speech_manager
+
+def get_grammar_checker():
+    global _grammar_checker
+    if _grammar_checker is None:
+        _grammar_checker = GrammarChecker()
+    return _grammar_checker
 
 @login_required
 def interview_list(request):
@@ -80,7 +92,7 @@ def evaluate_answer(request, pk):
         
         try:
             # 1. Transcribe (Fastest step)
-            text, lang = speech_manager.transcribe(temp_path)
+            text, lang = get_speech_manager().transcribe(temp_path)
             
             fillers = ['um', 'uh', 'ah', 'like', 'actually']
             filler_count = sum(1 for word in text.lower().split() if word in fillers)

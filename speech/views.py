@@ -5,7 +5,13 @@ from django.views.decorators.csrf import csrf_exempt
 from django.core.files.storage import default_storage
 from .utils import SpeechManager
 
-speech_manager = SpeechManager()
+_speech_manager = None
+
+def get_speech_manager():
+    global _speech_manager
+    if _speech_manager is None:
+        _speech_manager = SpeechManager()
+    return _speech_manager
 
 @csrf_exempt
 def transcribe_audio(request):
@@ -15,7 +21,7 @@ def transcribe_audio(request):
         file_path = default_storage.path(file_name)
         
         try:
-            text, language = speech_manager.transcribe(file_path)
+            text, language = get_speech_manager().transcribe(file_path)
             # Cleanup
             os.remove(file_path)
             

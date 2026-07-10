@@ -5,7 +5,13 @@ from django.views.decorators.csrf import csrf_exempt
 from django.core.files.storage import default_storage
 from .utils import PronunciationAnalyzer
 
-analyzer = PronunciationAnalyzer()
+_analyzer = None
+
+def get_analyzer():
+    global _analyzer
+    if _analyzer is None:
+        _analyzer = PronunciationAnalyzer()
+    return _analyzer
 
 def pronunciation_index(request):
     return render(request, 'pronunciation/index.html')
@@ -20,7 +26,7 @@ def analyze_audio(request):
         file_path = default_storage.path(file_name)
         
         try:
-            results = analyzer.analyze(file_path, target_text)
+            results = get_analyzer().analyze(file_path, target_text)
             # Cleanup
             os.remove(file_path)
             

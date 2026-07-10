@@ -5,11 +5,16 @@ from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from .models import ChatMessage
 from ai_engine.gemini import gemini_ai
-from ai_engine.tts import TTSEngine
 import uuid
 
-# Initialize TTS
-tts_engine = TTSEngine()
+_tts_engine = None
+
+def get_tts_engine():
+    global _tts_engine
+    if _tts_engine is None:
+        from ai_engine.tts import TTSEngine
+        _tts_engine = TTSEngine()
+    return _tts_engine
 
 @login_required
 def chat_index(request):
@@ -67,7 +72,7 @@ def send_message(request):
             audio_url = None
             try:
                 filename = f"reply_{uuid.uuid4().hex}.mp3"
-                audio_url = tts_engine.save_to_file(
+                audio_url = get_tts_engine().save_to_file(
                     ai_reply, 
                     filename, 
                     voice_pref=user.ai_voice, 
